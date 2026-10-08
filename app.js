@@ -9,6 +9,11 @@
     rift: { name: 'Rift', max: 8, title: 'Name the champion.', description: 'Compare each guess with the mystery champion. Arrows point toward the answer.', kicker: 'DAILY LEAGUE CHAMPION' },
     dex: { name: 'Dex', max: 8, title: "Who's that Pokémon?", description: 'Use the types, generation, and size clues to find today’s Pokémon.', kicker: 'DAILY POKÉMON' }
   };
+  const THEMES = {
+    word: { title: 'The letter arcade', eyebrow: 'INSERT A LITTLE BRAINPOWER', note: 'THE LETTER ARCADE', color: '#160e2c' },
+    rift: { title: 'Enter the Rift', eyebrow: 'LEAGUE OF LEGENDS', note: 'THE CHAMPION ARCHIVE', color: '#061319' },
+    dex: { title: 'Pokédex discovery', eyebrow: 'POKÉMON FIELD GUIDE', note: 'POKÉDEX // DAILY SCAN', color: '#082634' }
+  };
   const FIELDS = {
     rift: [{ key: 'roles', label: 'Class' }, { key: 'resource', label: 'Resource' }, { key: 'range', label: 'Atk. range' }, { key: 'speed', label: 'Move speed' }, { key: 'difficulty', label: 'Difficulty' }],
     dex: [{ key: 'types', label: 'Types' }, { key: 'generation', label: 'Gen.' }, { key: 'height', label: 'Height', suffix: ' m' }, { key: 'weight', label: 'Weight', suffix: ' kg' }, { key: 'color', label: 'Color' }]
@@ -16,12 +21,20 @@
   const WORDS = new Set(D.validWords.split(' '));
   const MAPS = { rift: new Map(D.rift.map(x => [x.id, x])), dex: new Map(D.dex.map(x => [x.id, x])) };
   let today = E.dateKey(), resetAt = E.nextReset(), mode = MODES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'word';
-  let typedWord = '', states = {}, lastReveal = '', toastTimer, storageWarned = false, suggestions = [], selectedSuggestion = -1;
+  let round = 0, typedWord = '', states = {}, lastReveal = '', letterPulse = -1, toastTimer, storageWarned = false, suggestions = [], selectedSuggestion = -1;
   const memory = new Map();
   const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const answer = (m = mode) => E.dailyAnswer(m === 'word' ? D.answers : D[m], today, m);
+  function addDays(key, amount) {
+    const date = new Date(`${key}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + amount);
+    return date.toISOString().slice(0, 10);
+  }
+  const puzzleDate = () => addDays(today, round);
+  const answer = (m = mode) => E.dailyAnswer(m === 'word' ? D.answers : D[m], puzzleDate(), round ? `${m}:practice:${round}` : m);
   const answerId = m => m === 'word' ? answer(m) : answer(m).id;
-  const stateKey = m => `daily-queue:v1:${today}:${m}`;
+  const stateKey = m => `daily-queue:v2:${today}:${round}:${m}`;
+  const legacyStateKey = m => `daily-queue:v1:${today}:${m}`;
+  const roundKey = () => `daily-queue:v2:round:${today}`;
   const gameStatus = m => E.status(states[m].guesses, answerId(m), META[m].max);
   function warnStorage() {
     if (storageWarned) return;
@@ -31,6 +44,9 @@
   function loadState(m) {
     let raw;
     try { raw = localStorage.getItem(stateKey(m)); } catch { warnStorage(); }
+    if (!raw && round === 0) {
+      try { raw = localStorage.getItem(legacyStateKey(m)); } catch { warnStorage(); }
+    }
     if (!raw) raw = memory.get(stateKey(m));
     let s;
     try { s = JSON.parse(raw); } catch { s = null; }
@@ -45,6 +61,13 @@
     memory.set(stateKey(m), raw);
     try { localStorage.setItem(stateKey(m), raw); } catch { warnStorage(); }
   }
+  function loadRound() {
+    try { round = Math.max(0, Number.parseInt(localStorage.getItem(roundKey()) || '0', 10) || 0); } catch { round = 0; warnStorage(); }
+  }
+  function saveRound() {
+    memory.set(roundKey(), String(round));
+    try { localStorage.setItem(roundKey(), String(round)); } catch { warnStorage(); }
+  }
   function loadAll() { for (const m of MODES) states[m] = loadState(m); }
   function toast(message) {
     $('toast').textContent = message; $('toast').classList.add('visible');
@@ -57,7 +80,7 @@
   function checkDay() {
     const next = E.dateKey();
     if (next === today) return false;
-    today = next; resetAt = E.nextReset(); typedWord = ''; lastReveal = ''; loadAll(); render();
+    today = next; resetAt = E.nextReset(); round = 0; saveRound(); typedWord = ''; lastReveal = ''; loadAll(); render();
     toast('A fresh daily lineup is ready. Good luck!'); return true;
   }
   function tick() {
@@ -74,8 +97,16 @@
     if (focus) { const target = mode === 'word' ? $('game-panel') : $('guess-input'); target?.focus({ preventScroll: true }); }
   }
   function render() {
+    const theme = THEMES[mode];
+    document.body.dataset.theme = mode;
+    $('theme-heading').innerHTML = `${theme.title}<span>.</span>`;
+    $('theme-eyebrow').textContent = theme.eyebrow;
+    $('theme-header-note').textContent = theme.note;
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', theme.color);
+    $('dex-device-status').textContent = gameStatus('dex') === 'won' ? 'ENTRY IDENTIFIED' : gameStatus('dex') === 'lost' ? 'SCAN COMPLETE' : 'SCANNER READY';
+    $('dex-scan-number').textContent = `NO. ${Math.max(1, E.dayNumber(today) + 1).toString().padStart(3, '0')}`;
     $('date-label').textContent = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: E.ZONE }).format(new Date());
-    $('edition-label').textContent = `Daily #${Math.max(1, E.dayNumber(today) + 1).toString().padStart(3, '0')}`;
+    $('edition-label').textContent = round ? `Practice +${round}` : `Daily #${Math.max(1, E.dayNumber(today) + 1).toString().padStart(3, '0')}`;
     for (const m of MODES) {
       const tab = $(`tab-${m}`), active = mode === m;
       tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1;
@@ -101,22 +132,23 @@
         const c = word[col] || '', color = score?.[col] || '';
         if (score && (!keyColors[c] || rank[color] > rank[keyColors[c]])) keyColors[c] = color;
         const reveal = lastReveal === `word:${row}` ? ' reveal' : '';
+        const pulse = row === guesses.length && c && col === letterPulse ? ' letter-pop' : '';
         const mark = color === 'match' ? '✓' : color === 'partial' ? '·' : color ? '×' : '';
         const accessible = color === 'match' ? 'correct spot' : color === 'partial' ? 'wrong spot' : color ? 'not in word' : c ? 'not submitted' : 'empty';
-        tiles += `<div class="tile ${color || (c ? 'filled' : '')}${row === guesses.length ? ' active-row' : ''}${reveal}" style="--i:${col}" role="img" aria-label="Row ${row + 1}, letter ${col + 1}: ${c ? c.toUpperCase() + ', ' : ''}${accessible}">${c.toUpperCase()}${mark ? `<span class="tile-mark" aria-hidden="true">${mark}</span>` : ''}</div>`;
+        tiles += `<div class="tile ${color || (c ? 'filled' : '')}${row === guesses.length ? ' active-row' : ''}${reveal}${pulse}" style="--i:${col}" role="img" aria-label="Row ${row + 1}, letter ${col + 1}: ${c ? c.toUpperCase() + ', ' : ''}${accessible}">${c.toUpperCase()}${mark ? `<span class="tile-mark" aria-hidden="true">${mark}</span>` : ''}</div>`;
       }
     }
     const keyboard = ['qwertyuiop', 'asdfghjkl', '↵zxcvbnm⌫'].map(row => `<div class="key-row">${[...row].map(key => `<button class="key ${key === '↵' || key === '⌫' ? 'wide' : ''} ${keyColors[key] || ''}" data-key="${key}" aria-label="${key === '↵' ? 'Submit guess' : key === '⌫' ? 'Delete letter' : key.toUpperCase()}" ${gameStatus('word') !== 'playing' ? 'disabled' : ''}>${key === '↵' ? 'ENTER' : key}</button>`).join('')}</div>`).join('');
     $('game-content').innerHTML = `<div class="word-board" aria-label="Word puzzle, six rows of five letters">${tiles}</div><div class="keyboard" aria-label="Letter keyboard">${keyboard}</div>`;
     $('game-content').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => inputWord(button.dataset.key)));
-    lastReveal = '';
+    lastReveal = ''; letterPulse = -1;
   }
   function inputWord(key) {
     if (checkDay() || gameStatus('word') !== 'playing') return;
     message('');
     if (key === '↵' || key === 'Enter') { submitWord(typedWord); return; }
-    if (key === '⌫' || key === 'Backspace' || key === 'Delete') typedWord = typedWord.slice(0, -1);
-    else if (/^[a-z]$/i.test(key) && typedWord.length < 5) typedWord += key.toLowerCase();
+    if (key === '⌫' || key === 'Backspace' || key === 'Delete') { letterPulse = Math.max(0, typedWord.length - 1); typedWord = typedWord.slice(0, -1); }
+    else if (/^[a-z]$/i.test(key) && typedWord.length < 5) { typedWord += key.toLowerCase(); letterPulse = typedWord.length - 1; }
     renderWord();
   }
   function submitWord(value) {
@@ -208,6 +240,10 @@
   function renderSidebar() {
     const won = MODES.filter(m => gameStatus(m) === 'won').length;
     $('completion-label').textContent = `${won} / 3`; $('progress-fill').style.width = `${won / 3 * 100}%`; $('daily-progress').setAttribute('aria-valuenow', String(won));
+    $('queue-title').textContent = round ? `Practice lineup +${round}` : 'Your daily three';
+    $('lineup-note').textContent = round ? 'Practice rounds are for keeping the streak going.' : "Same puzzles. Everyone's own guesses.";
+    $('refresh-lineup').innerHTML = round ? '<span aria-hidden="true">↻</span> Refresh again' : '<span aria-hidden="true">↻</span> Refresh lineup';
+    $('return-daily').hidden = round === 0;
     $('queue-list').innerHTML = MODES.map(m => {
       const status = gameStatus(m), n = states[m].guesses.length;
       const label = status === 'won' ? `${n}/${META[m].max} solved` : status === 'lost' ? 'Try tomorrow' : n ? `${n} ${n === 1 ? 'guess' : 'guesses'} in` : 'Ready to play';
@@ -219,7 +255,7 @@
   }
   function shareText(single) {
     const modes = single ? [single] : MODES;
-    const lines = [`Daily Queue · ${today}`, ''];
+    const lines = [`Daily Queue · ${round ? `Practice +${round} · ${today}` : today}`, ''];
     for (const m of modes) {
       const state = states[m], status = gameStatus(m);
       lines.push(`${META[m].name} ${status === 'won' ? state.guesses.length : status === 'lost' ? 'X' : state.guesses.length ? state.guesses.length + ' so far' : '—'}/${META[m].max}${state.hint ? ' · hint used' : ''}`);
@@ -252,6 +288,14 @@
   $('close-dialog').addEventListener('click', () => $('info-dialog').close());
   $('info-dialog').addEventListener('click', event => { if (event.target === $('info-dialog')) { const rect = $('info-dialog').getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) $('info-dialog').close(); } });
   $('share-day').addEventListener('click', () => copyResults());
+  $('refresh-lineup').addEventListener('click', () => {
+    round += 1; saveRound(); typedWord = ''; letterPulse = -1; lastReveal = ''; closeSuggestions(); loadAll(); render();
+    toast(`Practice lineup +${round} loaded. Keep going!`);
+  });
+  $('return-daily').addEventListener('click', () => {
+    round = 0; saveRound(); typedWord = ''; letterPulse = -1; lastReveal = ''; closeSuggestions(); loadAll(); render();
+    toast("Today's lineup restored.");
+  });
   document.querySelectorAll('[data-game]').forEach(tab => {
     tab.addEventListener('click', () => switchGame(tab.dataset.game));
     tab.addEventListener('keydown', event => {
@@ -264,20 +308,21 @@
   document.addEventListener('keydown', event => {
     if (mode !== 'word' || $('info-dialog').open || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
     const target = event.target instanceof Element ? event.target : document.body;
-    if (target.closest('input,textarea,select,a') || (event.key === 'Enter' && target.closest('button') && !target.dataset.key)) return;
-    if (/^[a-z]$/i.test(event.key) || ['Enter', 'Backspace', 'Delete'].includes(event.key)) { event.preventDefault(); inputWord(event.key); }
-  });
+    const keyButton = target.closest('button[data-key]');
+    if (target.closest('input,textarea,select,a') || (target.closest('button') && !keyButton)) return;
+    if (/^[a-z]$/i.test(event.key) || ['Enter', 'NumpadEnter', 'Backspace', 'Delete'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); inputWord(event.key === 'NumpadEnter' ? 'Enter' : event.key); }
+  }, true);
   document.addEventListener('click', event => { if (!event.target.closest('.guess-form')) closeSuggestions(); });
   window.addEventListener('hashchange', () => { const next = location.hash.slice(1); if (MODES.includes(next)) switchGame(next); });
   window.addEventListener('storage', event => { if (event.key === null || MODES.some(m => event.key === stateKey(m))) { loadAll(); render(); } });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkDay(); loadAll(); render(); tick(); } });
   window.addEventListener('focus', () => { if (!checkDay()) { loadAll(); render(); } });
-  loadAll(); render(); tick(); setInterval(tick, 1000);
+  loadRound(); loadAll(); render(); tick(); setInterval(tick, 1000);
   // Progressive enhancement: unsupported browsers simply use the normal UI.
   if (document.modelContext?.registerTool) {
     const lifecycle = new AbortController();
     const register = tool => { try { Promise.resolve(document.modelContext.registerTool(tool, { signal: lifecycle.signal })).catch(() => {}); } catch { /* optional API */ } };
-    register({ name: 'read_daily_queue', title: 'Read daily puzzle progress', description: 'Read today’s games and saved guesses without revealing unsolved answers.', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true }, execute: () => { checkDay(); return { date: today, selectedGame: mode, games: MODES.map(m => ({ game: m, status: gameStatus(m), guesses: [...states[m].guesses], maxGuesses: META[m].max, hintUsed: states[m].hint })) }; } });
+    register({ name: 'read_daily_queue', title: 'Read puzzle progress', description: 'Read the current daily or practice lineup and saved guesses without revealing unsolved answers.', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true }, execute: () => { checkDay(); return { date: today, lineup: round ? `practice +${round}` : 'daily', practiceRound: round, selectedGame: mode, games: MODES.map(m => ({ game: m, status: gameStatus(m), guesses: [...states[m].guesses], maxGuesses: META[m].max, hintUsed: states[m].hint })) }; } });
     register({ name: 'submit_daily_guess', title: 'Submit a puzzle guess', description: 'Select Word, Rift, or Dex and submit one guess, consuming an attempt if valid. This updates the visible game and saved progress.', inputSchema: { type: 'object', properties: { game: { type: 'string', enum: MODES }, guess: { type: 'string', minLength: 1, maxLength: 60 } }, required: ['game', 'guess'], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: input => { if (!input || !MODES.includes(input.game) || typeof input.guess !== 'string' || input.guess.length > 60 || !input.guess.trim()) return { error: 'Provide a valid game and guess.' }; switchGame(input.game); return input.game === 'word' ? submitWord(input.guess) : submitRoster(input.guess); } });
     window.addEventListener('pagehide', () => lifecycle.abort(), { once: true });
   }

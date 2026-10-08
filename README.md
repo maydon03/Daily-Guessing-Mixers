@@ -5,6 +5,8 @@ A daily puzzle arcade for you and your friends, ready for GitHub Pages.
 - **Word:** 1,061 curated five-letter answers, six guesses, and a 15,922-word guess dictionary.
 - **Rift:** Guess one of 173 League of Legends champions using class, resource, attack range, movement speed, and difficulty clues. Eight guesses.
 - **Dex:** Guess one of 1,025 Pokémon from generations 1–9 using types, generation, height, weight, and Pokédex color. Eight guesses, standard forms only.
+- Each game has its own visual world: a neon letter arcade for Word, a champion archive with Graves, Viego, and Pyke for Rift, and a red Pokédex scanner with Charizard, Charmander, and Pikachu for Dex.
+- Click **Refresh lineup** whenever you want to keep playing. It starts a deterministic practice lineup immediately, saves it in that browser, and leaves the normal daily set available through **Back to today’s set**. Practice results are labeled so they are not confused with the shared daily result.
 - Same puzzles for everyone. New puzzles at **midnight America/Chicago**, with daylight saving time handled automatically.
 - Progress survives refreshing and reopening in the same browser. Device-local saves; no login or shared leaderboard.
 - Keyboard and touch controls, name suggestions, optional hints after three guesses, animated feedback, and spoiler-free result copying.
@@ -49,6 +51,7 @@ This is a client-side game for friendly competition. Like other static puzzle si
 - `app.js`: controls, saves, hints, results, and progressive WebMCP support
 - `data.js`: bundled answer pools and dictionary
 - `assets/`: local images and fonts
+- `assets/themes/`: the themed League splash art and Pokémon official artwork used by Rift and Dex
 - `tests/engine.test.cjs`: focused puzzle logic tests
 - `CREDITS.md` and `LICENSES/`: source attribution and licenses
 

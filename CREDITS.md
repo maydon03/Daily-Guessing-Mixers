@@ -36,3 +36,10 @@ DM Sans and Space Grotesk, distributed through Google Fonts. Font licenses are i
 - https://fonts.google.com/specimen/Space+Grotesk
 
 Third-party names and assets remain subject to their respective rights and terms.
+
+## Themed artwork
+
+The League themed backdrop uses the default champion splash assets for Graves, Viego, and Pyke from Riot Games Data Dragon. The Pokémon themed backdrop uses the official artwork files for Charizard #6, Charmander #4, and Pikachu #25 from the maintained PokéAPI sprites repository. These characters, names, and artwork remain owned by Riot Games, Nintendo, Game Freak, and The Pokémon Company respectively.
+
+- Riot splash convention: https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Graves_0.jpg (with `Viego_0.jpg` and `Pyke_0.jpg`)
+- Pokémon official artwork: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png (with `4.png` and `25.png`)
