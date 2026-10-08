@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0c1010">
-  <meta name="description" content="Your daily word, League champion, and Pokémon guessing games. Same puzzles for the whole group. New set at midnight Central.">
-  <title>Daily Queue · Three puzzles, every day</title>
+  <meta name="description" content="One Wordle, three League mini-games, and three original-151 Pokémon mini-games. Same puzzles for the whole group. New set at midnight Central.">
+  <title>Daily Queue · One Wordle, six themed games</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230c1010'/%3E%3Cpath d='M15 15h14v14H15zm20 0h14v14H35zM15 35h14v14H15zm20 0h14v14H35z' fill='%23b1f46b'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="themes.css?v=3">
+  <link rel="stylesheet" href="themes.css?v=4">
   <script src="data.js" defer></script>
   <script src="assets/portraits.js" defer></script>
   <script src="engine.js" defer></script>
-  <script src="app.js?v=3" defer></script>
+  <script src="app.js?v=4" defer></script>
 </head>
 <body data-theme="word">
   <a href="#game-panel" class="skip-link">Skip to puzzle</a>
@@ -30,9 +30,9 @@
     <main>
       <div class="day-heading"><div><p class="eyebrow" id="theme-eyebrow">INSERT A LITTLE BRAINPOWER</p><h1 id="theme-heading">The letter arcade<span>.</span></h1></div><div class="date-stamp"><span id="date-label"></span><strong id="edition-label"></strong></div></div>
       <nav class="game-tabs" aria-label="Choose a game" role="tablist">
-        <button class="game-tab active" id="tab-word" data-game="word" role="tab" aria-selected="true" aria-controls="game-panel"><span class="tab-symbol word-symbol" aria-hidden="true">W</span><span class="tab-copy"><strong>Word</strong><span>Five letters. Six tries.</span></span><span class="tab-status" id="tab-status-word">01</span></button>
-        <button class="game-tab" id="tab-rift" data-game="rift" role="tab" aria-selected="false" aria-controls="game-panel" tabindex="-1"><span class="tab-symbol rift-symbol" aria-hidden="true">R</span><span class="tab-copy"><strong>Rift</strong><span>Find the League champion.</span></span><span class="tab-status" id="tab-status-rift">02</span></button>
-        <button class="game-tab" id="tab-dex" data-game="dex" role="tab" aria-selected="false" aria-controls="game-panel" tabindex="-1"><span class="tab-symbol dex-symbol" aria-hidden="true">D</span><span class="tab-copy"><strong>Dex</strong><span>Who's that Pokémon?</span></span><span class="tab-status" id="tab-status-dex">03</span></button>
+        <button class="game-tab active" id="tab-word" data-game="word" role="tab" aria-selected="true" aria-controls="game-panel"><span class="tab-symbol word-symbol" aria-hidden="true">W</span><span class="tab-copy"><strong>Wordle</strong><span>One classic word game.</span></span><span class="tab-status" id="tab-status-word">01</span></button>
+        <button class="game-tab" id="tab-rift" data-game="rift" role="tab" aria-selected="false" aria-controls="game-panel" tabindex="-1"><span class="tab-symbol rift-symbol" aria-hidden="true">R</span><span class="tab-copy"><strong>Rift</strong><span>Three League mini-games.</span></span><span class="tab-status" id="tab-status-rift">03</span></button>
+        <button class="game-tab" id="tab-dex" data-game="dex" role="tab" aria-selected="false" aria-controls="game-panel" tabindex="-1"><span class="tab-symbol dex-symbol" aria-hidden="true">D</span><span class="tab-copy"><strong>Dex</strong><span>Three Kanto mini-games.</span></span><span class="tab-status" id="tab-status-dex">03</span></button>
       </nav>
       <div class="workspace">
         <section class="game-panel" id="game-panel" role="tabpanel" aria-labelledby="tab-word" tabindex="0">
@@ -44,6 +44,7 @@
           <div class="game-screen">
           <div class="panel-top"><div><span class="eyebrow" id="game-kicker">DAILY WORD</span><h2 id="game-title">Make every letter count.</h2></div><span class="attempt-pill" id="attempt-counter">0 / 6</span></div>
           <p class="game-description" id="game-description">Find today's five-letter word. Your colors are your clues.</p>
+          <div class="variant-picker" id="variant-picker" role="tablist" aria-label="Choose a game mode" hidden></div>
           <div id="game-content"></div>
           <div class="game-message" id="game-message" role="status" aria-live="polite"></div>
           <div id="game-result"></div>
@@ -51,7 +52,7 @@
           <div class="device-footer" aria-hidden="true"><span>DAILY SCAN</span><span class="device-speaker"><i></i><i></i><i></i><i></i></span><span id="dex-scan-number">NO. 001</span></div>
         </section>
         <aside class="side-panel" aria-label="Daily progress">
-          <div class="queue-card"><div class="queue-title"><h2 id="queue-title">Your daily three</h2><span id="completion-label">0 / 3</span></div><div class="progress-track" role="progressbar" aria-label="Games won today" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" id="daily-progress"><span id="progress-fill"></span></div><div id="queue-list"></div><div class="queue-actions"><button class="share-button" id="share-day">Copy daily results <span aria-hidden="true">▤</span></button><button class="refresh-button" id="refresh-lineup" type="button"><span aria-hidden="true">↻</span> Refresh lineup</button><button class="text-button daily-return" id="return-daily" type="button" hidden>Back to today’s set</button></div><p class="side-small" id="lineup-note">Same puzzles. Everyone's own guesses.</p></div>
+          <div class="queue-card"><div class="queue-title"><h2 id="queue-title">Your daily seven</h2><span id="completion-label">0 / 7</span></div><div class="progress-track" role="progressbar" aria-label="Games won today" aria-valuemin="0" aria-valuemax="7" aria-valuenow="0" id="daily-progress"><span id="progress-fill"></span></div><div id="queue-list"></div><div class="queue-actions"><button class="share-button" id="share-day">Copy daily results <span aria-hidden="true">▤</span></button><button class="refresh-button" id="refresh-lineup" type="button"><span aria-hidden="true">↻</span> Refresh lineup</button><button class="text-button daily-return" id="return-daily" type="button" hidden>Back to today’s set</button></div><p class="side-small" id="lineup-note">Same puzzles. Everyone's own guesses.</p></div>
           <div class="reset-card"><p class="eyebrow">NEXT DAILY DROP</p><p class="countdown" id="countdown">--:--:--</p><p>Midnight, US Central</p><span class="reset-note">One fresh puzzle per game, every day.</span></div>
           <div class="legend-card"><p class="eyebrow">READ THE COLORS</p><div><span class="legend-square match" aria-hidden="true">✓</span><span>Exact match</span></div><div><span class="legend-square partial" aria-hidden="true">~</span><span>Partial match</span></div><div><span class="legend-square miss" aria-hidden="true">×</span><span>No match</span></div><p id="legend-extra">Yellow letters belong in a different spot.</p></div>
         </aside>

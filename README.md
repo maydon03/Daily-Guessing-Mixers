@@ -2,10 +2,10 @@
 
 A daily puzzle arcade for you and your friends, ready for GitHub Pages.
 
-- **Word:** 1,061 curated five-letter answers, six guesses, and a 15,922-word guess dictionary.
-- **Rift:** Guess one of 173 League of Legends champions using class, resource, attack range, movement speed, and difficulty clues. Eight guesses.
-- **Dex:** Guess one of 1,025 Pokémon from generations 1–9 using types, generation, height, weight, and Pokédex color. Eight guesses, standard forms only.
-- Each game has its own visual world: a neon letter arcade for Word, a champion archive with Graves, Viego, and Pyke for Rift, and a red Pokédex scanner with Charizard, Charmander, and Pikachu for Dex.
+- **Wordle:** One focused five-letter game with 1,061 curated answers, six guesses, a 15,922-word guess dictionary, animated letters, and physical or on-screen Enter.
+- **Rift:** Three League of Legends games—Champion Clues, Role Queue, and Champion Silhouette—using a frozen roster of 173 champions.
+- **Dex:** Three Pokémon games—Kanto Clues, Type Scan, and Who’s That Pokémon?—limited to the original 151 Pokémon from Generation 1.
+- Each category has its own visual world: a neon letter arcade for Wordle, a champion archive with Graves, Viego, and Pyke for Rift, and a red Pokédex scanner with Charizard, Charmander, and Pikachu for Dex.
 - Click **Refresh lineup** whenever you want to keep playing. It starts a deterministic practice lineup immediately, saves it in that browser, and leaves the normal daily set available through **Back to today’s set**. Practice results are labeled so they are not confused with the shared daily result.
 - Same puzzles for everyone. New puzzles at **midnight America/Chicago**, with daylight saving time handled automatically.
 - Progress survives refreshing and reopening in the same browser. Device-local saves; no login or shared leaderboard.
@@ -29,7 +29,7 @@ You can also double-click `index.html` to try the game locally. If your browser 
 
 ## How the refresh works
 
-The game computes a shared daily date in US Central time. A deterministic shuffled schedule chooses one answer per game. Refreshing the page does not change the puzzle or erase guesses. The page checks for the next day while it is open and again when you return to the tab. Each roster cycles without repeating an answer within that cycle; a boundary between cycles can repeat.
+The game computes a shared daily date in US Central time. A deterministic shuffled schedule chooses one answer per mini-game. Refreshing the page does not change the puzzle or erase guesses. The **Refresh lineup** button starts a new deterministic practice lineup immediately; **Back to today’s set** restores the shared daily lineup. Each roster cycles without repeating an answer within that cycle; a boundary between cycles can repeat.
 
 There is no daily upload to perform. The bundled roster is a frozen snapshot, so everyone on the same version sees the same result. League stats are from Data Dragon **16.20.1**, captured October 8, 2026. New champion or Pokémon releases are not automatically added. Replacing or reordering a roster changes that game's schedule, so coordinate roster updates with your group.
 
@@ -39,7 +39,7 @@ Each friend opens the same website and plays their own copy of the daily puzzles
 
 Names and answers are kept out of share text. A used hint is marked. Unfinished games are marked as in progress.
 
-Progress lives in browser storage under `daily-queue:v1:YYYY-MM-DD:game`. It does not sync between devices. Private browsing, clearing site data, a different domain, or disabling storage can remove or isolate progress. If storage is unavailable, the game explains that the current tab is temporary.
+Progress lives in browser storage under versioned `daily-queue` keys. It does not sync between devices. Private browsing, clearing site data, a different domain, or disabling storage can remove or isolate progress. If storage is unavailable, the game explains that the current tab is temporary.
 
 This is a client-side game for friendly competition. Like other static puzzle sites, its answer data can be inspected by a determined player; it has no server-side anti-cheat.
 
