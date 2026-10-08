@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c1010">
+  <meta name="description" content="Your daily word, League champion, and Pokémon guessing games. Same puzzles for the whole group. New set at midnight Central.">
+  <title>Daily Queue · Three puzzles, every day</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230c1010'/%3E%3Cpath d='M15 15h14v14H15zm20 0h14v14H35zM15 35h14v14H15zm20 0h14v14H35z' fill='%23b1f46b'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="data.js" defer></script>
+  <script src="assets/portraits.js" defer></script>
+  <script src="engine.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a href="#game-panel" class="skip-link">Skip to puzzle</a>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Daily Queue home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>daily<span class="brand-light">queue</span><span class="brand-period">.</span></span></a>
+      <span class="header-note">A little friendly competition.</span>
+      <button class="outline-button help-button" id="help-button"><span aria-hidden="true">?</span> How to play</button>
+    </header>
+    <main>
+      <div class="day-heading"><div><p class="eyebrow">THE DAILY LINEUP</p><h1>Good guesses. <span>Better bragging rights.</span></h1></div><div class="date-stamp"><span id="date-label"></span><strong id="edition-label"></strong></div></div>
+      <nav class="game-tabs" aria-label="Choose a game" role="tablist">
+        <button class="game-tab active" id="tab-word" data-game="word" role="tab" aria-selected="true" aria-controls="game-panel"><span class="tab-symbol word-symbol" aria-hidden="true">W</span><span class="tab-copy"><strong>Word</strong><span>Five letters. Six tries.</span></span><span class="tab-status" id="tab-status-word">01</span></button>
+        <button class="game-tab" id="tab-rift" data-game="rift" role="tab" aria-selected="false" aria-controls="game-panel" tabindex="-1"><span class="tab-symbol rift-symbol" aria-hidden="true">R</span><span class="tab-copy"><strong>Rift</strong><span>Find the League champion.</span></span><span class="tab-status" id="tab-status-rift">02</span></button>
+        <button class="game-tab" id="tab-dex" data-game="dex" role="tab" aria-selected="false" aria-controls="game-panel" tabindex="-1"><span class="tab-symbol dex-symbol" aria-hidden="true">D</span><span class="tab-copy"><strong>Dex</strong><span>Who's that Pokémon?</span></span><span class="tab-status" id="tab-status-dex">03</span></button>
+      </nav>
+      <div class="workspace">
+        <section class="game-panel" id="game-panel" role="tabpanel" aria-labelledby="tab-word" tabindex="0">
+          <div class="panel-top"><div><span class="eyebrow" id="game-kicker">DAILY WORD</span><h2 id="game-title">Make every letter count.</h2></div><span class="attempt-pill" id="attempt-counter">0 / 6</span></div>
+          <p class="game-description" id="game-description">Find today's five-letter word. Your colors are your clues.</p>
+          <div id="game-content"></div>
+          <div class="game-message" id="game-message" role="status" aria-live="polite"></div>
+          <div id="game-result"></div>
+        </section>
+        <aside class="side-panel" aria-label="Daily progress">
+          <div class="queue-card"><div class="queue-title"><h2>Your daily three</h2><span id="completion-label">0 / 3</span></div><div class="progress-track" role="progressbar" aria-label="Games won today" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" id="daily-progress"><span id="progress-fill"></span></div><div id="queue-list"></div><button class="share-button" id="share-day">Copy daily results <span aria-hidden="true">▤</span></button><p class="side-small">Same puzzles. Everyone's own guesses.</p></div>
+          <div class="reset-card"><p class="eyebrow">NEXT DAILY DROP</p><p class="countdown" id="countdown">--:--:--</p><p>Midnight, US Central</p><span class="reset-note">One fresh puzzle per game, every day.</span></div>
+          <div class="legend-card"><p class="eyebrow">READ THE COLORS</p><div><span class="legend-square match" aria-hidden="true">✓</span><span>Exact match</span></div><div><span class="legend-square partial" aria-hidden="true">~</span><span>Partial match</span></div><div><span class="legend-square miss" aria-hidden="true">×</span><span>No match</span></div><p id="legend-extra">Yellow letters belong in a different spot.</p></div>
+        </aside>
+      </div>
+    </main>
+    <footer><span>For the group chat, with love.</span><div><span>Progress stays in this browser.</span><button class="text-button" id="credits-button">Credits</button></div></footer>
+  </div>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <dialog id="info-dialog"><div class="dialog-heading"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">×</button></div><div id="dialog-content"></div></dialog>
+  <noscript><div class="no-script">Daily Queue needs JavaScript enabled to run the puzzles.</div></noscript>
+</body>
+</html>
