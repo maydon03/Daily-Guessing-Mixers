@@ -1,413 +1,289 @@
 (() => {
   'use strict';
-  const E = window.QueueEngine, D = window.QueueData;
+  const E = window.QueueEngine, A = window.ArcadeEngine, D = window.QueueData, P = window.ArcadeData;
   const $ = id => document.getElementById(id);
-  if (!E || !D) { $('game-content').textContent = 'A game file is missing. Please refresh, or check that data.js and engine.js were uploaded beside index.html.'; return; }
-  const MODES = ['word', 'rift', 'dex'];
-  const KANTO = D.dex.filter(item => item.generation === 1 && item.number <= 151);
-  const META = {
-    word: { id: 'word', name: 'Wordle', label: 'Wordle', category: 'word', type: 'word', max: 6, title: 'Make every letter count.', description: "Find today's five-letter word. Your colors are your clues.", kicker: 'DAILY WORD', items: D.answers, seed: 'word' },
-    rift_clues: { id: 'rift_clues', name: 'Rift · Champion Clues', label: 'Champion Clues', category: 'rift', type: 'roster', max: 8, title: 'Name the champion.', description: 'Compare class, resource, range, speed, and difficulty with the mystery champion.', kicker: 'RIFT // CHAMPION CLUES', items: D.rift, fields: [{ key: 'roles', label: 'Class' }, { key: 'resource', label: 'Resource' }, { key: 'range', label: 'Atk. range' }, { key: 'speed', label: 'Move speed' }, { key: 'difficulty', label: 'Difficulty' }], seed: 'rift', hintLabel: 'Champion title' },
-    rift_role: { id: 'rift_role', name: 'Rift · Role Queue', label: 'Role Queue', category: 'rift', type: 'roster', max: 6, title: 'Queue up the answer.', description: 'Use class, resource, and difficulty to lock onto a League champion.', kicker: 'RIFT // ROLE QUEUE', items: D.rift, fields: [{ key: 'roles', label: 'Class' }, { key: 'resource', label: 'Resource' }, { key: 'difficulty', label: 'Difficulty' }], seed: 'rift-role', hintLabel: 'Champion title' },
-    rift_silhouette: { id: 'rift_silhouette', name: 'Rift · Champion Silhouette', label: 'Champion Silhouette', category: 'rift', type: 'silhouette', max: 6, title: 'Who is hiding in the mist?', description: 'Search the shadow and identify the League champion before the signal fades.', kicker: 'RIFT // SILHOUETTE DROP', items: D.rift, seed: 'rift-silhouette', hintLabel: 'Champion title' },
-    dex_clues: { id: 'dex_clues', name: 'Dex · Kanto Clues', label: 'Kanto Clues', category: 'dex', type: 'roster', max: 8, title: 'Read the Kanto entry.', description: 'Compare types, Pokédex number, size, and color across the original 151.', kicker: 'DEX // KANTO CLUES', items: KANTO, fields: [{ key: 'types', label: 'Types' }, { key: 'number', label: '#', prefix: '#' }, { key: 'height', label: 'Height', suffix: ' m' }, { key: 'weight', label: 'Weight', suffix: ' kg' }, { key: 'color', label: 'Color' }], seed: 'dex-kanto', hintLabel: 'Pokédex category' },
-    dex_silhouette: { id: 'dex_silhouette', name: "Dex · Who's That Pokémon?", label: "Who's That Pokémon?", category: 'dex', type: 'silhouette', max: 6, title: "Who's that Pokémon?", description: 'The silhouette is from the original 151. Search the Kanto Pokédex to reveal it.', kicker: 'DEX // WHO’S THAT POKÉMON?', items: KANTO, seed: 'dex-silhouette', hintLabel: 'Pokédex category' },
-    dex_types: { id: 'dex_types', name: 'Dex · Type Scan', label: 'Type Scan', category: 'dex', type: 'roster', max: 6, title: 'Match the type signature.', description: 'Use type, color, and Pokédex direction clues to find a Kanto Pokémon.', kicker: 'DEX // TYPE SCAN', items: KANTO, fields: [{ key: 'types', label: 'Types' }, { key: 'color', label: 'Color' }, { key: 'number', label: 'Dex no.', prefix: '#' }], seed: 'dex-types', hintLabel: 'Pokédex category' }
+  if (!E || !A || !D || !P) { $('game-grid').textContent = 'A puzzle file is missing. Upload all the files in the download, then refresh this page.'; return; }
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const icons = {
+    word: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="m14 18 3 3 5-7"/>',
+    groups: '<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="8" height="6" rx="2"/><rect x="15" y="14" width="6" height="6" rx="2"/>',
+    ladder: '<path d="M4 21V4h6v6h6v6h5M4 21h17M8 3l3 0M20 12v-8h-8m8 0-8 8"/>',
+    code: '<rect x="4" y="10" width="16" height="12" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v3"/>',
+    shuffle: '<path d="m3 5 3 0c5 0 7 14 12 14h3m-4-4 4 4-4 4M3 19h3c5 0 7-14 12-14h3m-4-4 4 4-4 4"/>',
+    hive: '<path d="m12 2 9 5v10l-9 5-9-5V7z"/><path d="m12 7 4 2.5v5L12 17l-4-2.5v-5z"/>',
+    cross: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18m6-18v18M3 9h18M3 15h18"/><path d="M9 9h6v6H9z" fill="currentColor"/>',
+    logic: '<circle cx="5" cy="5" r="3"/><circle cx="19" cy="19" r="3"/><path d="M8 5h7a4 4 0 0 1 0 8H9a4 4 0 0 0 0 8h7M19 2v6m-3-3h6"/>',
+    sword: '<path d="m4 3 12 9 5 9-9-5L3 4zm0 17 5-5m6-6 5-5M2 17l5 5M17 2l5 5"/>',
+    quote: '<path d="M4 5h7v8c0 5-4 7-7 7v-4c2 0 3-1 3-3H4zm11 0h7v8c0 5-4 7-7 7v-4c2 0 3-1 3-3h-3z"/>',
+    bolt: '<path d="m14 2-10 12h7l-1 8L21 9h-8z"/>',
+    emoji: '<circle cx="12" cy="12" r="9"/><path d="M7 14c2 5 8 5 10 0M8 8v2m8-2v2"/>',
+    picture: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 6-5 4 3 4-6 4 5"/>',
+    ball: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M3 12h6m6 0h6"/>',
+    card: '<rect x="5" y="2" width="14" height="20" rx="3"/><rect x="8" y="5" width="8" height="9" rx="1"/><path d="M9 17h6m-6 2h3"/>',
+    book: '<path d="M12 5C9 2 5 2 2 3v17c4-1 7-1 10 1 3-2 6-2 10-1V3c-3-1-7-1-10 2zm0 0v16"/>',
+    shadow: '<path d="M6 20h12V9a6 6 0 0 0-12 0zm0 0-3 2V9m18 13-3-2M9 10v2m6-2v2"/>',
+    settings: '<path d="M4 5h16M4 12h16M4 19h16"/><circle cx="8" cy="5" r="2" fill="var(--bg)"/><circle cx="16" cy="12" r="2" fill="var(--bg)"/><circle cx="10" cy="19" r="2" fill="var(--bg)"/>',
+    heart: '<path d="M20.5 4.5a5 5 0 0 0-7 0L12 6l-1.5-1.5a5 5 0 0 0-7 7L12 21l8.5-9.5a5 5 0 0 0 0-7z"/>'
   };
-  const GAME_KEYS = Object.keys(META);
-  const VARIANTS = { rift: [META.rift_clues, META.rift_role, META.rift_silhouette], dex: [META.dex_clues, META.dex_silhouette, META.dex_types] };
-  const THEMES = {
-    word: { title: 'The letter arcade', eyebrow: 'INSERT A LITTLE BRAINPOWER', note: 'THE LETTER ARCADE', color: '#160e2c' },
-    rift: { title: 'Enter the Rift', eyebrow: 'LEAGUE OF LEGENDS', note: 'THE CHAMPION ARCHIVE', color: '#061319' },
-    dex: { title: 'Pokédex discovery', eyebrow: 'POKÉMON FIELD GUIDE', note: 'POKÉDEX // DAILY SCAN', color: '#082634' }
-  };
+  const icon = (key, cls = '') => `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[key] || icons.word}</svg>`;
+  const GAMES = [
+    ['wordle','Wordle','word','word','Six guesses. Five letters. One very satisfying answer.','The original ritual',6,'word'],
+    ['categories','Category Match','word','groups','Sixteen words. Four secret connections. Can you find the groups?','Find the connection',4,'categories'],
+    ['ladder','Word Ladder','word','ladder','Change one letter at a time. Every little step brings you closer.','One letter, one step',0,'ladder'],
+    ['codebreaker','Codebreaker','word','code','Four secret digits. Read the feedback and crack the lock.','Crack the combination',8,'code'],
+    ['anagrams','Anagram Rush','word','shuffle','Untangle five scrambled words. No clock. Just a little brainpower.','A five-word streak',8,'anagrams'],
+    ['hive','Letter Hive','word','hive','Seven letters, one essential center. How many words can you build?','Small letters, big possibilities',0,'hive'],
+    ['crossword','Mini Crossword','word','cross','A little grid with six crossing clues. A perfect coffee-break puzzle.','Your five-minute fix',0,'crossword'],
+    ['logic','Logic Lab','word','logic','Three trainers. Three Pokémon. Follow the clues to solve the case.','Connect the evidence',0,'logic'],
+    ['rift-classic','Classic','rift','sword','Every champion guess reveals six useful clues. Follow the colors.','The champion archive',8,'classic'],
+    ['rift-quote','Quote & Riddle','rift','quote','An original champion riddle. Find the story behind the voice.','Who am I?',6,'riddle'],
+    ['rift-ability','Ability','rift','bolt','One ability icon. One champion. A different test of your Rift knowledge.','Know the kit',6,'ability'],
+    ['rift-emoji','Emoji','rift','emoji','A champion told in symbols. More emojis appear as you guess.','Read between the emojis',6,'emoji'],
+    ['rift-splash','Splash','rift','picture','A tiny detail from a splash artwork. Each miss widens the view.','Look a little closer',6,'splash'],
+    ['dex-classic','Classic','dex','ball','Find a Kanto Pokémon using type, evolution, habitat, and size clues.','Open the Pokédex',8,'classic'],
+    ['dex-card','Mystery Card','dex','card','A blurred collectible-style card. Clear the picture one guess at a time.','A familiar face, out of focus',6,'card'],
+    ['dex-description','Description','dex','book','Read an original field note and name the Pokémon it describes.','The field guide',6,'description'],
+    ['dex-silhouette','Who’s That Pokémon?','dex','shadow','A cropped, tilted shadow. Hard mode reveals the outline little by little.','A harder kind of Kanto',6,'silhouette'],
+    ['dex-types','Type Detective','dex','bolt','Compare types, color, and evolution stage. Small clues, big deductions.','Trace the type signature',7,'types']
+  ].map(([id,name,category,glyph,description,tag,max,type]) => ({id,name,category,glyph,description,tag,max,type}));
+  const GAME = Object.fromEntries(GAMES.map(g => [g.id,g]));
+  const WORLDS = {word:{name:'Word & logic',subtitle:'For the love of a good puzzle.',color:'violet'},rift:{name:'League of Legends',subtitle:'Know the champion. Read the Rift.',color:'teal'},dex:{name:'Kanto collection',subtitle:'The original 151. A whole new challenge.',color:'coral'}};
+  const CLASSIC_RIFT=[['positions','Position'],['roles','Class'],['resource','Resource'],['attack','Attack type'],['region','Region'],['year','Release year']];
+  const CLASSIC_DEX=[['types','Type(s)'],['stage','Evo. stage'],['habitat','Habitat'],['color','Color'],['height','Height · m'],['weight','Weight · kg']];
   const WORDS = new Set(D.validWords.split(' '));
-  const MAPS = Object.fromEntries(GAME_KEYS.filter(key => key !== 'word').map(key => [key, new Map(META[key].items.map(item => [item.id, item]))]));
-  const categoryOf = key => META[key]?.category || 'word';
-  const variantOf = key => key === 'word' ? '' : key.slice(categoryOf(key).length + 1);
-  const validVariant = (category, variant) => Boolean(VARIANTS[category]?.some(meta => variantOf(meta.id) === variant));
-  const hashFor = (category, variant) => category === 'word' ? 'word' : `${category}-${variant}`;
-  const readHash = () => {
-    const raw = location.hash.slice(1).toLowerCase();
-    if (raw === 'word') return { category: 'word', variant: '' };
-    for (const category of ['rift', 'dex']) {
-      if (raw === category) return { category, variant: variantOf(VARIANTS[category][0].id) };
-      if (raw.startsWith(`${category}-`) && validVariant(category, raw.slice(category.length + 1))) return { category, variant: raw.slice(category.length + 1) };
+  const PREFIX='daily-queue:v4:';
+  const memory=new Map(), puzzleCache=new Map(), artLoads=new Map();
+  let warned=false, today=E.dateKey(), active=null, seed=null, state=null, puzzle=null, typed='', category='all', query='', selected=[], selectedSuggestion=-1, suggestions=[], lastReveal=false, toastTimer, crosswordEntry=null, crossCell=0, challengePinned=false;
+  function read(key,fallback){try {const value=localStorage.getItem(PREFIX+key);if(value!==null)return JSON.parse(value);}catch{}return memory.has(key)?memory.get(key):fallback;}
+  function write(key,value){memory.set(key,value);try {localStorage.setItem(PREFIX+key,JSON.stringify(value));}catch{if(!warned){warned=true;toast('Storage is unavailable. Your progress will last in this tab.');}}}
+  let rounds=read('rounds',{}), favorites=read('favorites',[]), preferences=read('settings',{motion:true});
+  if (!rounds||typeof rounds!=='object'||Array.isArray(rounds))rounds={};
+  if (!Array.isArray(favorites))favorites=[];
+  if (!preferences||typeof preferences!=='object')preferences={motion:true};
+  const daily=()=>`d-${today}`;
+  const validSeed=s=>typeof s==='string'&&(/^(p-[a-z0-9]{6,24}|d-\d{4}-\d{2}-\d{2})$/.test(s))&&(!s.startsWith('d-')||(!isNaN(Date.parse(s.slice(2)))&&new Date(s.slice(2)).toISOString().slice(0,10)===s.slice(2)));
+  const seedFor=id=>validSeed(rounds[id])?rounds[id]:daily();
+  const stateId=(id,s)=>`state:${id}:${s}`;
+  const newState=()=>({guesses:[],wrong:[],found:[],solved:[],hint:0,shuffles:0,grid:Array(25).fill(''),pets:[-1,-1,-1],towns:[-1,-1,-1],checks:0,level:'hard',revealed:[],started:Date.now()});
+  function loadState(id,s){
+    const base=newState(), raw=read(stateId(id,s),null);
+    if(raw&&typeof raw==='object'){
+      for(const k of ['guesses','wrong','found','solved']) if(Array.isArray(raw[k]))base[k]=raw[k].filter(x=>typeof x==='string'&&x.length<200).slice(0,1000);
+      for(const k of ['hint','shuffles','checks'])base[k]=Number.isInteger(raw[k])?Math.max(0,Math.min(10000,raw[k])):0;
+      if(Array.isArray(raw.grid)&&raw.grid.length===25)base.grid=raw.grid.map(x=>typeof x==='string'&&/^[a-z]?$/i.test(x)?x.toLowerCase():'');
+      for(const k of ['pets','towns'])if(Array.isArray(raw[k])&&raw[k].length===3)base[k]=raw[k].map(x=>[-1,0,1,2].includes(x)?x:-1);
+      base.level=raw.level==='normal'?'normal':'hard';
+      if(Array.isArray(raw.revealed))base.revealed=raw.revealed.filter(x=>Number.isInteger(x)&&x>=0&&x<25);
+    } else if(id==='wordle'&&s===daily()){
+      // The Wordle daily answer is unchanged, so carry over the previous version's guesses.
+      try {const legacy=JSON.parse(localStorage.getItem(`daily-queue:v3:${today}:0:word`));if(Array.isArray(legacy?.guesses))base.guesses=legacy.guesses.filter(w=>WORDS.has(w)).slice(0,6);}catch{}
     }
-    return { category: 'word', variant: '' };
-  };
-  const initialHash = readHash();
-  let today = E.dateKey(), resetAt = E.nextReset(), mode = initialHash.category;
-  let variant = { rift: initialHash.category === 'rift' ? initialHash.variant : 'clues', dex: initialHash.category === 'dex' ? initialHash.variant : 'clues' };
-  let round = 0, typedWord = '', states = {}, lastReveal = '', letterPulse = -1, toastTimer, storageWarned = false, suggestions = [], selectedSuggestion = -1;
-  const memory = new Map();
-  const esc = text => String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const activeKey = () => mode === 'word' ? 'word' : `${mode}_${variant[mode]}`;
-  function addDays(key, amount) {
-    const date = new Date(`${key}T00:00:00Z`);
-    date.setUTCDate(date.getUTCDate() + amount);
-    return date.toISOString().slice(0, 10);
+    return base;
   }
-  const puzzleDate = () => addDays(today, round);
-  const answer = (key = activeKey()) => E.dailyAnswer(META[key].items, puzzleDate(), round ? `${key}:practice:${round}` : META[key].seed);
-  const answerId = key => key === 'word' ? answer(key) : answer(key).id;
-  const stateKey = key => `daily-queue:v3:${today}:${round}:${key}`;
-  const legacyStateKeys = key => {
-    if (round !== 0) return [];
-    if (key === 'rift_clues') return [`daily-queue:v2:${today}:0:rift`, `daily-queue:v1:${today}:rift`];
-    if (key === 'dex_clues') return [`daily-queue:v2:${today}:0:dex`, `daily-queue:v1:${today}:dex`];
-    if (key === 'word') return [`daily-queue:v2:${today}:0:word`, `daily-queue:v1:${today}:word`];
-    return [];
-  };
-  const roundKey = () => `daily-queue:v2:round:${today}`;
-  const gameStatus = key => E.status(states[key]?.guesses || [], answerId(key), META[key].max);
-  function warnStorage() {
-    if (storageWarned) return;
-    storageWarned = true;
-    toast('Browser storage is unavailable. Progress will last only while this tab stays open.');
+  function getPuzzle(id,s){const k=id+':'+s;if(!puzzleCache.has(k))puzzleCache.set(k,A.makePuzzle(id,s,D,P));return puzzleCache.get(k);}
+  function status(g=active,s=state,p=puzzle){
+    if(!g||!s||!p)return'playing';
+    if(g.type==='word')return E.status(s.guesses,p.answer,g.max);
+    if(g.type==='code')return E.status(s.guesses,p.answer,g.max);
+    if(g.type==='categories')return s.solved.length>=4?'won':s.wrong.length>=4?'lost':'playing';
+    if(g.type==='ladder')return s.guesses.at(-1)===p.end?'won':'playing';
+    if(g.type==='anagrams')return s.found.length>=5?'won':s.wrong.length>=8?'lost':'playing';
+    if(g.type==='hive')return hivePoints(s,p)>=p.goal?'won':'playing';
+    if(g.type==='crossword')return p.grid.join('').split('').every((c,i)=>c==='#'||s.grid[i]===c)?'won':'playing';
+    if(g.type==='logic')return s.pets.every((v,i)=>v===p.solution.pets[i])&&s.towns.every((v,i)=>v===p.solution.towns[i])&&s.checks>0?'won':'playing';
+    return E.status(s.guesses,p.target.id,g.max);
   }
-  function loadState(key) {
-    let raw;
-    try { raw = localStorage.getItem(stateKey(key)); } catch { warnStorage(); }
-    if (!raw) {
-      for (const legacy of legacyStateKeys(key)) {
-        try { raw = localStorage.getItem(legacy); } catch { warnStorage(); }
-        if (raw) break;
-      }
-    }
-    if (!raw) raw = memory.get(stateKey(key));
-    let s;
-    try { s = JSON.parse(raw); } catch { s = null; }
-    const valid = key === 'word' ? x => typeof x === 'string' && WORDS.has(x) && /^[a-z]{5}$/.test(x) : x => MAPS[key].has(x);
-    let guesses = Array.isArray(s?.guesses) ? [...new Set(s.guesses.filter(valid))].slice(0, META[key].max) : [];
-    const winAt = guesses.indexOf(answerId(key));
-    if (winAt >= 0) guesses = guesses.slice(0, winAt + 1);
-    return { guesses, hint: Boolean(s?.hint) && guesses.length >= 3 };
-  }
-  function saveState(key) {
-    const raw = JSON.stringify(states[key]);
-    memory.set(stateKey(key), raw);
-    try { localStorage.setItem(stateKey(key), raw); } catch { warnStorage(); }
-  }
-  function loadRound() {
-    try { round = Math.max(0, Number.parseInt(localStorage.getItem(roundKey()) || '0', 10) || 0); } catch { round = 0; warnStorage(); }
-  }
-  function saveRound() {
-    memory.set(roundKey(), String(round));
-    try { localStorage.setItem(roundKey(), String(round)); } catch { warnStorage(); }
-  }
-  function loadAll() { for (const key of GAME_KEYS) states[key] = loadState(key); }
-  function toast(message) {
-    $('toast').textContent = message; $('toast').classList.add('visible');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').classList.remove('visible'), 3500);
-  }
-  function message(text, shake = false) {
-    $('game-message').textContent = text;
-    if (shake) { const board = document.querySelector('.word-board'); board?.classList.remove('shake'); void board?.offsetWidth; board?.classList.add('shake'); }
-  }
-  function checkDay() {
-    const next = E.dateKey();
-    if (next === today) return false;
-    today = next; resetAt = E.nextReset(); round = 0; saveRound(); typedWord = ''; lastReveal = ''; loadAll(); render();
-    toast('A fresh daily lineup is ready. Good luck!'); return true;
-  }
-  function tick() {
-    checkDay();
-    const seconds = Math.max(0, Math.ceil((resetAt - Date.now()) / 1000));
-    const h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60), s = seconds % 60;
-    $('countdown').textContent = [h, m, s].map(x => String(x).padStart(2, '0')).join(':');
-  }
-  function switchGame(next, focus = false) {
-    if (META[next]) {
-      mode = categoryOf(next);
-      if (mode !== 'word') variant[mode] = variantOf(next);
-    } else if (MODES.includes(next)) {
-      mode = next;
-    } else return;
-    lastReveal = ''; message(''); closeSuggestions();
-    try { history.replaceState(null, '', `#${hashFor(mode, variant[mode])}`); } catch { /* file previews can forbid history changes */ }
-    render();
-    if (focus) { const target = mode === 'word' ? $('game-panel') : $('guess-input'); target?.focus({ preventScroll: true }); }
-  }
-  function switchVariant(next, focus = false) {
-    if (mode === 'word' || !validVariant(mode, next)) return;
-    variant[mode] = next; lastReveal = ''; message(''); closeSuggestions();
-    try { history.replaceState(null, '', `#${hashFor(mode, variant[mode])}`); } catch { /* file previews can forbid history changes */ }
-    render();
-    if (focus) $('guess-input')?.focus({ preventScroll: true });
-  }
-  function render() {
-    const key = activeKey(), meta = META[key], theme = THEMES[mode];
-    document.body.dataset.theme = mode;
-    $('theme-heading').innerHTML = `${theme.title}<span>.</span>`;
-    $('theme-eyebrow').textContent = theme.eyebrow;
-    $('theme-header-note').textContent = theme.note;
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', theme.color);
-    $('dex-device-status').textContent = ['dex_clues', 'dex_silhouette', 'dex_types'].some(game => gameStatus(game) === 'won') ? 'ENTRY IDENTIFIED' : 'SCANNER READY';
-    $('dex-scan-number').textContent = `NO. ${Math.max(1, E.dayNumber(today) + 1).toString().padStart(3, '0')}`;
-    $('date-label').textContent = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: E.ZONE }).format(new Date());
-    $('edition-label').textContent = round ? `Practice +${round}` : `Daily #${Math.max(1, E.dayNumber(today) + 1).toString().padStart(3, '0')}`;
-    for (const m of MODES) {
-      const tab = $(`tab-${m}`), active = mode === m;
-      tab.classList.toggle('active', active); tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1;
-    }
-    $('game-panel').setAttribute('aria-labelledby', `tab-${mode}`);
-    $('game-panel').dataset.mode = mode;
-    $('game-panel').dataset.game = key;
-    $('game-kicker').textContent = meta.kicker; $('game-title').textContent = meta.title;
-    $('game-description').textContent = meta.description;
-    $('attempt-counter').textContent = `${states[key].guesses.length} / ${meta.max}`;
-    $('legend-extra').textContent = meta.type === 'word' ? 'Yellow letters belong in a different spot.' : meta.type === 'silhouette' ? 'Search the shadow. The answer is revealed when you solve it.' : 'Green is exact. Yellow means a partial match. Arrows point toward the answer.';
-    $('game-message').textContent = '';
-    renderVariantPicker();
-    if (meta.type === 'word') renderWord();
-    else if (meta.type === 'silhouette') renderSilhouette(key);
-    else renderRoster(key);
-    renderResult(key); renderSidebar();
-  }
-  function renderVariantPicker() {
-    const picker = $('variant-picker');
-    if (mode === 'word') { picker.hidden = true; picker.innerHTML = ''; return; }
-    const key = activeKey();
-    picker.hidden = false;
-    picker.setAttribute('aria-label', `${THEMES[mode].title} games`);
-    picker.innerHTML = VARIANTS[mode].map(meta => `<button class="variant-button ${meta.id === key ? 'active' : ''}" type="button" role="tab" aria-selected="${meta.id === key}" data-variant="${variantOf(meta.id)}"><span>${esc(meta.label)}</span><small>${meta.max} tries</small></button>`).join('');
-    picker.querySelectorAll('[data-variant]').forEach(button => button.addEventListener('click', () => switchVariant(button.dataset.variant, true)));
-  }
-  function renderWord() {
-    const guesses = states.word.guesses, target = answer('word'), keyColors = {};
-    const rank = { miss: 1, partial: 2, match: 3 };
-    let tiles = '';
-    for (let row = 0; row < 6; row++) {
-      const word = guesses[row] || (row === guesses.length && gameStatus('word') === 'playing' ? typedWord : '');
-      const score = guesses[row] ? E.scoreWord(word, target) : null;
-      for (let col = 0; col < 5; col++) {
-        const c = word[col] || '', color = score?.[col] || '';
-        if (score && (!keyColors[c] || rank[color] > rank[keyColors[c]])) keyColors[c] = color;
-        const reveal = lastReveal === `word:${row}` ? ' reveal' : '';
-        const pulse = row === guesses.length && c && col === letterPulse ? ' letter-pop' : '';
-        const mark = color === 'match' ? '✓' : color === 'partial' ? '·' : color ? '×' : '';
-        const accessible = color === 'match' ? 'correct spot' : color === 'partial' ? 'wrong spot' : color ? 'not in word' : c ? 'not submitted' : 'empty';
-        tiles += `<div class="tile ${color || (c ? 'filled' : '')}${row === guesses.length ? ' active-row' : ''}${reveal}${pulse}" style="--i:${col}" role="img" aria-label="Row ${row + 1}, letter ${col + 1}: ${c ? c.toUpperCase() + ', ' : ''}${accessible}">${c.toUpperCase()}${mark ? `<span class="tile-mark" aria-hidden="true">${mark}</span>` : ''}</div>`;
-      }
-    }
-    const keyboard = ['qwertyuiop', 'asdfghjkl', '↵zxcvbnm⌫'].map(row => `<div class="key-row">${[...row].map(key => `<button class="key ${key === '↵' || key === '⌫' ? 'wide' : ''} ${keyColors[key] || ''}" data-key="${key}" aria-label="${key === '↵' ? 'Submit guess' : key === '⌫' ? 'Delete letter' : key.toUpperCase()}" ${gameStatus('word') !== 'playing' ? 'disabled' : ''}>${key === '↵' ? 'ENTER' : key}</button>`).join('')}</div>`).join('');
-    $('game-content').innerHTML = `<div class="word-board" aria-label="Word puzzle, six rows of five letters">${tiles}</div><div class="keyboard" aria-label="Letter keyboard">${keyboard}</div>`;
-    $('game-content').querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', () => inputWord(button.dataset.key)));
-    lastReveal = ''; letterPulse = -1;
-  }
-  function inputWord(key) {
-    if (checkDay() || gameStatus('word') !== 'playing') return;
-    message('');
-    if (key === '↵' || key === 'Enter') { submitWord(typedWord); return; }
-    if (key === '⌫' || key === 'Backspace' || key === 'Delete') { letterPulse = Math.max(0, typedWord.length - 1); typedWord = typedWord.slice(0, -1); }
-    else if (/^[a-z]$/i.test(key) && typedWord.length < 5) { typedWord += key.toLowerCase(); letterPulse = typedWord.length - 1; }
-    renderWord();
-  }
-  function submitWord(value) {
-    if (checkDay()) return { error: 'The daily puzzle just changed. Try again.' };
-    states.word = loadState('word');
-    if (gameStatus('word') !== 'playing') { render(); return { error: 'This puzzle is finished.' }; }
-    const guess = String(value).trim().toLowerCase();
-    if (!/^[a-z]{5}$/.test(guess)) { message('Use five letters.', true); return { error: 'Use five letters.' }; }
-    if (!WORDS.has(guess)) { message('That word isn’t in this dictionary.', true); return { error: 'Word not in dictionary.' }; }
-    if (states.word.guesses.includes(guess)) { message('You already tried that word.', true); return { error: 'Already guessed.' }; }
-    states.word.guesses.push(guess); typedWord = ''; saveState('word'); lastReveal = `word:${states.word.guesses.length - 1}`; render();
-    return { guess, feedback: E.scoreWord(guess, answer('word')), status: gameStatus('word') };
-  }
-  function portrait(item, key, extra = '') {
-    const category = categoryOf(key), src = window.QueueArt?.[category]?.[item.id];
-    return src ? `<img src="${src}" alt="" class="portrait ${category === 'rift' ? 'champion' : ''} ${extra}" width="36" height="36" loading="lazy">` : '<span class="portrait-missing" aria-hidden="true">?</span>';
-  }
-  function formatValue(value, field) { return `${field.prefix || ''}${Array.isArray(value) ? value.join(' / ') : value}${field.suffix || ''}`; }
-  function clueRow(key, id, index) {
-    const guess = MAPS[key].get(id), target = answer(key), fields = META[key].fields;
-    return `<tr class="${lastReveal === `${key}:${index}` ? 'reveal' : ''}"><td>${portrait(guess, key)}${esc(guess.name)}</td>${fields.map(f => {
-      const result = E.compare(guess[f.key], target[f.key]);
-      const tag = result === 'higher' ? '↑ Higher' : result === 'lower' ? '↓ Lower' : result === 'match' ? '✓ Match' : result === 'partial' ? '~ Some' : '× No';
-      return `<td class="${result}">${esc(formatValue(guess[f.key], f))}<span class="clue-tag">${tag}</span></td>`;
-    }).join('')}</tr>`;
-  }
-  function renderGuessForm(key, finished) {
-    if (finished) return '';
-    const noun = META[key].category === 'rift' ? 'champion' : 'Pokémon';
-    return `<form class="guess-form" id="guess-form" autocomplete="off"><label for="guess-input" class="visually-hidden">${noun} name</label><div class="input-row"><input class="guess-input" id="guess-input" type="text" placeholder="Search a ${noun}…" spellcheck="false" autocapitalize="off" role="combobox" aria-expanded="false" aria-controls="suggestions" aria-autocomplete="list" maxlength="60"><button class="primary-button" type="submit">Guess</button></div><div class="suggestions" id="suggestions" role="listbox" aria-label="Matching names" hidden></div><p class="roster-caption">${META[key].category === 'rift' ? `${META[key].items.length} champions · Data Dragon ${D.version}` : `${META[key].items.length} Kanto Pokémon · Original 151 only`}</p></form>`;
-  }
-  function renderHint(key) {
-    const state = states[key];
-    if (META[key].type === 'word' || gameStatus(key) !== 'playing') return '';
-    const remaining = Math.max(0, 3 - state.guesses.length);
-    return `<div class="hint-row"><button class="hint-button" id="hint-button" ${state.guesses.length < 3 || state.hint ? 'disabled' : ''}>${state.hint ? 'Hint revealed' : 'Reveal a hint'}</button><p>${state.guesses.length < 3 ? `Unlocks after ${remaining} more ${remaining === 1 ? 'guess' : 'guesses'}.` : 'Using a hint is shown in your shared result.'}</p></div>${state.hint ? `<div class="hint-content">${esc(META[key].hintLabel)}: <strong>${esc(answer(key).title || answer(key).genus)}</strong></div>` : ''}`;
-  }
-  function attachGuessEvents() {
-    if (!$('guess-form')) return;
-    $('guess-input').addEventListener('input', updateSuggestions);
-    $('guess-input').addEventListener('keydown', suggestionKeys);
-    $('guess-form').addEventListener('submit', event => { event.preventDefault(); const selected = suggestions[selectedSuggestion]; submitRoster(selected?.id || $('guess-input').value); });
-    $('hint-button')?.addEventListener('click', revealHint);
-  }
-  function renderRoster(key) {
-    const state = states[key], finished = gameStatus(key) !== 'playing', fields = META[key].fields;
-    const table = `<div class="clue-scroll" tabindex="0" role="region" aria-label="Guess clues; scroll horizontally for all columns"><table class="clue-table"><thead><tr><th scope="col">Your guess</th>${fields.map(f => `<th scope="col">${esc(f.label)}</th>`).join('')}</tr></thead><tbody>${state.guesses.map((_, i) => clueRow(key, state.guesses[state.guesses.length - 1 - i], state.guesses.length - 1 - i)).join('')}</tbody></table></div>`;
-    const empty = !state.guesses.length ? `<div class="empty-board"><span aria-hidden="true">?</span><strong>Every guess gives you a clue.</strong><p>Start with any ${META[key].category === 'rift' ? 'champion' : 'Kanto Pokémon'} you know. The comparisons will narrow it down.</p></div>` : '';
-    $('game-content').innerHTML = renderGuessForm(key, finished) + table + empty + renderHint(key);
-    attachGuessEvents();
-    lastReveal = '';
-  }
-  function renderSilhouette(key) {
-    const status = gameStatus(key), finished = status !== 'playing', target = answer(key);
-    const label = status === 'won' ? 'ENTRY IDENTIFIED' : status === 'lost' ? 'SIGNAL COMPLETE' : 'SIGNAL MASKED';
-    const stage = `<div class="silhouette-stage ${finished ? 'revealed' : ''}" aria-label="${finished ? 'The answer image is revealed' : 'A hidden silhouette'}"><div class="silhouette-scanline"></div>${portrait(target, key, 'silhouette-art')}<span class="silhouette-label">${label}</span></div>`;
-    $('game-content').innerHTML = stage + renderGuessForm(key, finished) + renderHint(key);
-    attachGuessEvents();
-    lastReveal = '';
-  }
-  function updateSuggestions() {
-    const key = activeKey(), meta = META[key], input = $('guess-input'), list = $('suggestions'), search = E.normalize(input.value);
-    selectedSuggestion = -1;
-    suggestions = search ? meta.items.filter(x => !states[key].guesses.includes(x.id) && (E.normalize(x.name).includes(search) || E.normalize(x.id).includes(search))).sort((a, b) => Number(E.normalize(b.name).startsWith(search)) - Number(E.normalize(a.name).startsWith(search)) || a.name.localeCompare(b.name)).slice(0, 8) : [];
-    list.hidden = !suggestions.length; input.setAttribute('aria-expanded', String(!!suggestions.length)); input.removeAttribute('aria-activedescendant');
-    list.innerHTML = suggestions.map((x, i) => `<div class="suggestion" role="option" id="suggestion-${i}" data-index="${i}" aria-selected="false">${portrait(x, key)}<strong>${esc(x.name)}</strong><span>${meta.category === 'rift' ? esc(x.roles.join(' / ')) : '#' + String(x.number).padStart(3, '0')}</span></div>`).join('');
-    list.querySelectorAll('[data-index]').forEach(row => row.addEventListener('click', () => submitRoster(suggestions[Number(row.dataset.index)].id)));
-  }
-  function suggestionKeys(event) {
-    if (event.key === 'Escape') { closeSuggestions(); return; }
-    if (!['ArrowDown', 'ArrowUp'].includes(event.key) || !suggestions.length) return;
-    event.preventDefault();
-    selectedSuggestion = (selectedSuggestion + (event.key === 'ArrowDown' ? 1 : -1) + suggestions.length) % suggestions.length;
-    document.querySelectorAll('.suggestion').forEach((row, i) => { row.classList.toggle('selected', i === selectedSuggestion); row.setAttribute('aria-selected', String(i === selectedSuggestion)); });
-    $('guess-input').setAttribute('aria-activedescendant', `suggestion-${selectedSuggestion}`);
-    $(`suggestion-${selectedSuggestion}`).scrollIntoView({ block: 'nearest' });
-  }
-  function closeSuggestions() { const list = $('suggestions'); if (list) list.hidden = true; $('guess-input')?.setAttribute('aria-expanded', 'false'); $('guess-input')?.removeAttribute('aria-activedescendant'); suggestions = []; selectedSuggestion = -1; }
-  function submitRoster(value) {
-    if (checkDay()) return { error: 'The daily puzzle just changed. Try again.' };
-    const key = activeKey(), meta = META[key];
-    if (meta.type === 'word') return { error: 'Choose a themed game.' };
-    states[key] = loadState(key);
-    if (gameStatus(key) !== 'playing') { render(); return { error: 'This puzzle is finished.' }; }
-    const normalized = E.normalize(value), guess = meta.items.find(x => x.id === value || E.normalize(x.name) === normalized || E.normalize(x.id) === normalized);
-    if (!guess) { message(`Choose a ${meta.category === 'rift' ? 'champion' : 'Kanto Pokémon'} from the suggestions.`); return { error: 'Name not found.' }; }
-    if (states[key].guesses.includes(guess.id)) { message('You already tried that one. Pick another.'); return { error: 'Already guessed.' }; }
-    states[key].guesses.push(guess.id); saveState(key); lastReveal = `${key}:${states[key].guesses.length - 1}`; render();
-    $('guess-input')?.focus({ preventScroll: true });
-    return { guess: guess.name, feedback: meta.fields?.map(f => ({ field: f.label, value: guess[f.key], result: E.compare(guess[f.key], answer(key)[f.key]) })) || [guess.id === answer(key).id ? 'match' : 'miss'], status: gameStatus(key) };
-  }
-  function revealHint() {
-    if (checkDay() || mode === 'word') return { error: 'Hint unavailable.' };
-    const key = activeKey();
-    states[key] = loadState(key);
-    if (states[key].guesses.length < 3 || gameStatus(key) !== 'playing') return { error: 'Hints unlock after three guesses during an active puzzle.' };
-    states[key].hint = true; saveState(key); render();
-    return { hint: answer(key).title || answer(key).genus };
-  }
-  function renderResult(key) {
-    const meta = META[key], status = gameStatus(key), state = states[key];
-    if (status === 'playing') { $('game-result').innerHTML = ''; return; }
-    const target = answer(key), name = key === 'word' ? target.toUpperCase() : target.name;
-    const heading = status === 'lost' ? 'There’s always tomorrow.' : key === 'word' ? (state.guesses.length === 1 ? 'One guess. Unreal.' : 'That’s the word.') : meta.type === 'silhouette' ? (meta.category === 'rift' ? 'Champion revealed.' : 'Pokédex entry revealed.') : meta.category === 'rift' ? 'Champion identified.' : 'Pokédex entry secured.';
-    const next = GAME_KEYS.find(candidate => candidate !== key && gameStatus(candidate) === 'playing');
-    $('game-result').innerHTML = `<div class="result-card ${status === 'won' ? 'solved' : 'lost'}"><div class="result-head">${key === 'word' ? '' : portrait(target, key)}<div><h3>${heading}</h3><span class="answer-name">${esc(name)}</span></div></div><p>${status === 'won' ? `Solved in ${state.guesses.length} of ${meta.max} guesses${state.hint ? ', with a hint' : ''}. Send it to the group chat.` : `Today’s answer was ${esc(name)}. A fresh puzzle arrives at midnight Central.`}</p><div class="result-actions"><button class="primary-button" id="share-game">Copy result</button>${next ? `<button class="outline-button" id="next-game" data-next="${next}">Play ${esc(META[next].label)}</button>` : '<button class="outline-button" id="all-results">Copy daily results</button>'}</div></div>`;
-    $('share-game').addEventListener('click', () => copyResults(key));
-    $('next-game')?.addEventListener('click', event => switchGame(event.currentTarget.dataset.next, true));
-    $('all-results')?.addEventListener('click', () => copyResults());
-  }
-  function categorySummary(category) {
-    const keys = GAME_KEYS.filter(key => categoryOf(key) === category);
-    return { won: keys.filter(key => gameStatus(key) === 'won').length, total: keys.length };
-  }
-  function queueLabel(key) { return key === 'word' ? 'Wordle' : `${META[key].category === 'rift' ? 'Rift' : 'Dex'} · ${META[key].label}`; }
-  function renderSidebar() {
-    const total = GAME_KEYS.length, won = GAME_KEYS.filter(key => gameStatus(key) === 'won').length;
-    $('completion-label').textContent = `${won} / ${total}`; $('progress-fill').style.width = `${won / total * 100}%`; $('daily-progress').setAttribute('aria-valuemax', String(total)); $('daily-progress').setAttribute('aria-valuenow', String(won));
-    $('queue-title').textContent = round ? `Practice lineup +${round}` : `Your daily ${total}`;
-    $('lineup-note').textContent = round ? 'One Wordle, three Rift games, and three Kanto games. Keep going.' : "Same puzzles. Everyone's own guesses.";
-    $('refresh-lineup').innerHTML = round ? '<span aria-hidden="true">↻</span> Refresh again' : '<span aria-hidden="true">↻</span> Refresh lineup';
-    $('return-daily').hidden = round === 0;
-    $('queue-list').innerHTML = GAME_KEYS.map(key => {
-      const status = gameStatus(key), n = states[key].guesses.length;
-      const label = status === 'won' ? `${n}/${META[key].max} solved` : status === 'lost' ? 'Try tomorrow' : n ? `${n} ${n === 1 ? 'guess' : 'guesses'} in` : 'Ready to play';
-      return `<button class="queue-row" data-open="${key}"><span class="queue-mini ${categoryOf(key)}" aria-hidden="true">${categoryOf(key) === 'word' ? 'W' : categoryOf(key) === 'rift' ? 'R' : 'D'}</span><span>${esc(queueLabel(key))}</span><span class="${status}">${label}</span></button>`;
-    }).join('');
-    document.querySelectorAll('[data-open]').forEach(button => button.addEventListener('click', () => switchGame(button.dataset.open, true)));
-    for (const category of MODES) { const summary = categorySummary(category), target = $(`tab-status-${category}`); target.textContent = summary.won === summary.total ? '✓' : `${summary.won}/${summary.total}`; target.classList.toggle('done', summary.won === summary.total); }
-    $('share-day').innerHTML = `${won === total ? 'Perfect queue. Copy results' : 'Copy daily results'} <span aria-hidden="true">▤</span>`;
-  }
-  function feedbackSymbols(key, id) {
-    const target = answer(key);
-    if (key === 'word') return E.scoreWord(id, target);
-    if (META[key].type === 'silhouette') return [id === target.id ? 'match' : 'miss'];
-    const guess = MAPS[key].get(id);
-    return META[key].fields.map(field => E.compare(guess[field.key], target[field.key]));
-  }
-  function shareText(single) {
-    const keys = single ? [single] : GAME_KEYS;
-    const lines = [`Daily Queue · ${round ? `Practice +${round} · ${today}` : today}`, ''];
-    for (const key of keys) {
-      const state = states[key], status = gameStatus(key);
-      lines.push(`${queueLabel(key)} ${status === 'won' ? state.guesses.length : status === 'lost' ? 'X' : state.guesses.length ? state.guesses.length + ' so far' : '—'}/${META[key].max}${state.hint ? ' · hint used' : ''}`);
-      for (const id of state.guesses) lines.push(feedbackSymbols(key, id).map(value => value === 'match' ? '🟩' : value === 'partial' ? '🟨' : '⬛').join(''));
-      lines.push('');
-    }
-    if (/^https?:$/.test(location.protocol)) { const url = new URL(location.href); url.search = ''; url.hash = single ? hashFor(categoryOf(single), variantOf(single)) : ''; lines.push(url.href); }
-    return lines.join('\n').trim();
-  }
-  async function copyResults(single) {
-    const text = shareText(single);
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
-      await navigator.clipboard.writeText(text); toast('Copied. The group chat awaits.');
-    } catch {
-      openDialog('Your spoiler-free result', '<p>Copy the text below and send it to your friends.</p><textarea class="share-text" id="share-text" aria-label="Results to copy" readonly></textarea>');
-      $('share-text').value = text; $('share-text').focus(); $('share-text').select();
-    }
-    return text;
-  }
-  function openDialog(title, html) { $('dialog-title').textContent = title; $('dialog-content').innerHTML = html; if (!$('info-dialog').open) $('info-dialog').showModal(); }
-  function showHelp() {
-    openDialog('One Wordle. Six themed games.', `<div class="help-step"><span>01</span><div><strong>Wordle · six guesses</strong><p>Find the five-letter word. Green is the right letter in the right spot. Yellow means the letter belongs elsewhere.</p></div></div><div class="help-step"><span>02</span><div><strong>Rift · three games</strong><p>Champion Clues compares five stats, Role Queue narrows the champion with three stats, and Champion Silhouette asks you to identify a shadow.</p></div></div><div class="help-step"><span>03</span><div><strong>Dex · original 151</strong><p>Kanto Clues compares Pokédex data, Type Scan focuses on type and color, and Who’s That Pokémon? uses a silhouette. Every Pokémon game is limited to Generation 1.</p></div></div><p>Hints unlock after three guesses in the themed games. The whole group gets the same daily lineup. Refresh starts a deterministic practice lineup whenever you want, while Back to today’s set restores the shared daily games.</p><p>Progress stays in this browser. Copy your colored results to compare with friends without spoiling the answers.</p>`);
-  }
-  $('help-button').addEventListener('click', showHelp);
-  $('credits-button').addEventListener('click', () => openDialog('Made for the daily queue.', `<p>An independent fan project inspired by daily guessing games. Not affiliated with Wordle, LoLdle, Pokédle, Riot Games, Nintendo, Game Freak, or The Pokémon Company.</p><p>Champion data and portraits: <a href="https://developer.riotgames.com/docs/lol" target="_blank" rel="noopener noreferrer">Riot Games Data Dragon ${D.version}</a>. Pokémon data and sprites: <a href="https://pokeapi.co/" target="_blank" rel="noopener noreferrer">PokéAPI</a>. This build intentionally limits the playable Pokémon games to the original Kanto 151.</p><p>Guess dictionary: <a href="https://github.com/dwyl/english-words" target="_blank" rel="noopener noreferrer">dwyl/english-words</a>. Answer words are a separate curated list. Data snapshot: ${D.snapshot}.</p><p>Daily Queue isn’t endorsed by Riot Games and doesn’t reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.</p>`));
-  $('close-dialog').addEventListener('click', () => $('info-dialog').close());
-  $('info-dialog').addEventListener('click', event => { if (event.target === $('info-dialog')) { const rect = $('info-dialog').getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) $('info-dialog').close(); } });
-  $('share-day').addEventListener('click', () => copyResults());
-  $('refresh-lineup').addEventListener('click', () => {
-    round += 1; saveRound(); typedWord = ''; letterPulse = -1; lastReveal = ''; closeSuggestions(); loadAll(); render();
-    toast(`Practice lineup +${round} loaded. Keep going!`);
-  });
-  $('return-daily').addEventListener('click', () => {
-    round = 0; saveRound(); typedWord = ''; letterPulse = -1; lastReveal = ''; closeSuggestions(); loadAll(); render();
-    toast("Today's lineup restored.");
-  });
-  document.querySelectorAll('[data-game]').forEach(tab => {
-    tab.addEventListener('click', () => switchGame(tab.dataset.game, true));
-    tab.addEventListener('keydown', event => {
-      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-      event.preventDefault();
-      const index = event.key === 'Home' ? 0 : event.key === 'End' ? MODES.length - 1 : (MODES.indexOf(mode) + (event.key === 'ArrowRight' ? 1 : MODES.length - 1)) % MODES.length;
-      switchGame(MODES[index]); $(`tab-${MODES[index]}`).focus();
+  function hivePoints(s=state,p=puzzle){return s.found.filter(w=>p.words.includes(w)).reduce((n,w)=>n+A.hiveScore(w),0);}
+  function save(){write(stateId(active.id,seed),state);const solved=status()==='won';if(solved){let wins=read('wins',[]);if(!Array.isArray(wins))wins=[];const k=active.id+':'+seed;if(!wins.includes(k))write('wins',[...wins,k].slice(-1000));}updateSaved();}
+  function updateSaved(){if($('saved-indicator'))$('saved-indicator').innerHTML=warned?'This tab only':'<i></i> Progress saved';}
+  function toast(text){$('toast').textContent=text;$('toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),3400);}
+  function message(text,shake=false){$('game-message').textContent=text;if(shake){const panel=$('game-content');panel.classList.remove('shake');void panel.offsetWidth;panel.classList.add('shake');}}
+  function celebrate(){if(!preferences.motion||matchMedia('(prefers-reduced-motion: reduce)').matches)return;const box=$('celebration');box.innerHTML=Array.from({length:30},(_,i)=>`<i style="--x:${(i*37)%100}%;--delay:${(i%7)*.065}s;--turn:${i%2?280:-260}deg;--hue:${[86,166,265,35][i%4]}"></i>`).join('');setTimeout(()=>box.replaceChildren(),2500);}
+  const transparent='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+  function art(kind,id,cls='',alt='') {const src=window.ArcadeArt?.[kind]?.[id]||P.art[kind]?.[id];const ready=/^(https?:|data:)/.test(src||'');return `<img class="${cls}" src="${ready?src:transparent}" ${ready?'':`data-art="${esc(kind)}" data-art-id="${esc(id)}"`} alt="${esc(alt)}" decoding="async">`;}
+  function hydrateArt(){
+    document.querySelectorAll('img[data-art]').forEach(img=>{
+      const kind=img.dataset.art,id=img.dataset.artId,filename=P.art[kind]?.[id];if(!filename)return;
+      if(!artLoads.has(filename))artLoads.set(filename,new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=filename;script.onload=resolve;script.onerror=()=>{artLoads.delete(filename);script.remove();reject(new Error('Artwork unavailable'));};document.head.append(script);}));
+      artLoads.get(filename).then(()=>{if(!img.isConnected)return;const src=window.ArcadeArt?.[kind]?.[id];if(src){img.src=src;img.removeAttribute('data-art');img.closest('.puzzle-visual')?.classList.add('asset-ready');}}).catch(()=>{if(img.isConnected){img.alt='Artwork could not load';const parent=img.closest('.puzzle-visual');if(parent&&!parent.querySelector('.asset-error')){const note=document.createElement('p');note.className='asset-error';note.textContent='Artwork could not load. Check your connection and reopen this game.';parent.append(note);}}});
     });
-  });
-  document.addEventListener('keydown', event => {
-    if (mode !== 'word' || $('info-dialog').open || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return;
-    const target = event.target instanceof Element ? event.target : document.body;
-    const keyButton = target.closest('button[data-key]');
-    if (target.closest('input,textarea,select,a') || (target.closest('button') && !keyButton)) return;
-    if (/^[a-z]$/i.test(event.key) || ['Enter', 'NumpadEnter', 'Backspace', 'Delete'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); inputWord(event.key === 'NumpadEnter' ? 'Enter' : event.key); }
-  }, true);
-  document.addEventListener('click', event => { if (!(event.target instanceof Element) || !event.target.closest('.guess-form')) closeSuggestions(); });
-  window.addEventListener('hashchange', () => { const next = readHash(); mode = next.category; if (mode !== 'word') variant[mode] = next.variant; render(); });
-  window.addEventListener('storage', event => { if (event.key === null || event.key === roundKey() || GAME_KEYS.some(key => event.key === stateKey(key))) { loadRound(); loadAll(); render(); } });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkDay(); loadAll(); render(); tick(); } });
-  window.addEventListener('focus', () => { if (!checkDay()) { loadAll(); render(); } });
-  loadRound(); loadAll(); render(); tick(); setInterval(tick, 1000);
-  // Progressive enhancement: unsupported browsers simply use the normal UI.
-  if (document.modelContext?.registerTool) {
-    const lifecycle = new AbortController();
-    const register = tool => { try { Promise.resolve(document.modelContext.registerTool(tool, { signal: lifecycle.signal })).catch(() => {}); } catch { /* optional API */ } };
-    register({ name: 'read_daily_queue', title: 'Read puzzle progress', description: 'Read the current daily or practice lineup and saved guesses without revealing unsolved answers.', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true }, execute: () => { checkDay(); return { date: today, lineup: round ? `practice +${round}` : 'daily', practiceRound: round, selectedGame: activeKey(), games: GAME_KEYS.map(key => ({ game: key, category: categoryOf(key), name: META[key].name, status: gameStatus(key), guesses: [...states[key].guesses], maxGuesses: META[key].max, hintUsed: states[key].hint })) }; } });
-    register({ name: 'submit_daily_guess', title: 'Submit a puzzle guess', description: 'Select one of the Wordle, League, or Kanto Pokémon games and submit one guess, consuming an attempt if valid.', inputSchema: { type: 'object', properties: { game: { type: 'string', enum: GAME_KEYS }, guess: { type: 'string', minLength: 1, maxLength: 60 } }, required: ['game', 'guess'], additionalProperties: false }, annotations: { readOnlyHint: false }, execute: input => { if (!input || !META[input.game] || typeof input.guess !== 'string' || input.guess.length > 60 || !input.guess.trim()) return { error: 'Provide a valid game and guess.' }; switchGame(input.game); return input.game === 'word' ? submitWord(input.guess) : submitRoster(input.guess); } });
-    window.addEventListener('pagehide', () => lifecycle.abort(), { once: true });
   }
+  function favoriteButton(id){return `<button class="card-favorite ${favorites.includes(id)?'is-favorite':''}" data-favorite="${id}" aria-label="${favorites.includes(id)?'Remove from':'Add to'} favorites" aria-pressed="${favorites.includes(id)}">${icon('heart')}</button>`;}
+  function card(g){const s=loadState(g.id,seedFor(g.id)),p=getPuzzle(g.id,seedFor(g.id)),done=status(g,s,p);return `<article class="arcade-card ${g.category}"><a href="#${g.id}" class="card-link"><div class="card-art card-art-${g.id}">${cardDecoration(g)}<span class="card-icon">${icon(g.glyph)}</span><span class="card-chip">${g.id==='wordle'?'THE CLASSIC':g.category==='dex'?'GEN 1 ONLY':g.category==='rift'?'THE RIFT':'PLAY SOMETHING NEW'}</span></div><div class="card-copy"><div class="card-title"><h3>${esc(g.name)}</h3><span>↗</span></div><p>${esc(g.description)}</p><div class="card-meta"><span>${g.max?g.max+(g.type==='categories'?' mistakes':' guesses'):'Play at your pace'}</span><span class="card-status ${done}">${done==='won'?'✓ Solved':done==='lost'?'Another round?':'Let’s play'}</span></div></div></a>${favoriteButton(g.id)}</article>`;}
+  function cardDecoration(g){
+    if(g.category==='rift')return `<img class="card-scene" src="assets/themes/${g.type==='riddle'||g.type==='emoji'?'pyke':g.type==='splash'?'viego':'graves'}.jpg" alt="" loading="lazy">`;
+    if(g.category==='dex')return `<img class="card-pokemon" src="assets/themes/${g.type==='silhouette'?'charizard':g.type==='description'?'charmander':'pikachu'}.png" alt="" loading="lazy">`;
+    if(g.type==='word')return '<div class="mini-tiles"><i>W</i><i>O</i><i>R</i><i>D</i><i>S</i></div>';
+    if(g.type==='categories')return '<div class="mini-groups"><i>THE</i><i>GOOD</i><i>KIND</i><i>OF</i><i>BRAIN</i><i>FOOD</i></div>';
+    if(g.type==='code')return '<div class="mini-code"><i>?</i><i>?</i><i>?</i><i>?</i></div>';
+    if(g.type==='hive')return '<div class="mini-hive">✦</div>';
+    return '<div class="card-orbit"></div><span class="card-glyph">'+({ladder:'A → Z',anagrams:'M I X',crossword:'ACROSS ↓',logic:'IF… THEN'}[g.type]||'')+'</span>';
+  }
+  function renderHome(){
+    $('home-view').hidden=false;$('play-view').hidden=true;document.body.dataset.world='arcade';$('world-art').innerHTML='';active=null;
+    const eligible=GAMES.filter(g=>(category==='all'||g.category===category||(category==='favorites'&&favorites.includes(g.id)))&&`${g.name} ${g.description} ${WORLDS[g.category].name}`.toLowerCase().includes(query.toLowerCase()));
+    $('game-grid').innerHTML=Object.entries(WORLDS).map(([cat,w])=>{const rows=eligible.filter(g=>g.category===cat);return rows.length?`<section class="collection"><div class="collection-heading"><div><span class="collection-dot ${cat}"></span><h3>${w.name}</h3><span class="collection-count">${rows.length}</span></div><p>${w.subtitle}</p></div><div class="cards">${rows.map(card).join('')}</div></section>`:'';}).join('')||'<div class="empty-search"><h3>No games here yet.</h3><p>Try another search, or tap a heart to save a favorite.</p></div>';
+    document.querySelectorAll('[data-filter]').forEach(b=>{b.classList.toggle('active',b.dataset.filter===category);b.setAttribute('aria-pressed',String(b.dataset.filter===category));});
+    bindFavorites($('game-grid'));
+  }
+  function bindFavorites(root){root.querySelectorAll('[data-favorite]').forEach(b=>b.addEventListener('click',()=>toggleFavorite(b.dataset.favorite)));}
+  function toggleFavorite(id){favorites=favorites.includes(id)?favorites.filter(x=>x!==id):[...favorites,id];write('favorites',favorites);if(active){renderSidebar();updateFavorite();}else renderHome();}
+  function updateFavorite(){const yes=favorites.includes(active.id);$('favorite-game').innerHTML=icon('heart');$('favorite-game').classList.toggle('is-favorite',yes);$('favorite-game').setAttribute('aria-label',yes?'Remove from favorites':'Add to favorites');$('favorite-game').setAttribute('aria-pressed',String(yes));}
+  const aliases={'word':'wordle','rift':'rift-classic','rift-clues':'rift-classic','rift-role':'rift-classic','rift-silhouette':'rift-splash','dex':'dex-classic','dex-clues':'dex-classic'};
+  function route(){let id=location.hash.slice(1);if(id==='library') {if(active)renderHome();setTimeout(()=>$('library').scrollIntoView({behavior:preferences.motion?'smooth':'instant'}),0);return;}id=aliases[id]||id;if(GAME[id]){const url=new URL(location.href),s=url.searchParams.get('seed');openGame(id,validSeed(s)?s:undefined,false);}else renderHome();}
+  function openGame(id,requestedSeed,focus=true){
+    if(!GAME[id])return;active=GAME[id];challengePinned=Boolean(requestedSeed);seed=validSeed(requestedSeed)?requestedSeed:seedFor(id);rounds[id]=seed;write('rounds',rounds);state=loadState(id,seed);puzzle=getPuzzle(id,seed);typed='';selected=[];lastReveal=false;crosswordEntry=null;crossCell=0;
+    const level=new URL(location.href).searchParams.get('level');if(id==='dex-silhouette'&&['hard','normal'].includes(level)&&!state.guesses.length)state.level=level;
+    $('home-view').hidden=true;$('play-view').hidden=false;document.body.dataset.world=active.category;
+    const url=new URL(location.href);url.hash=id;url.searchParams.delete('seed');url.searchParams.delete('level');url.searchParams.delete('dq');if(seed!==daily()||requestedSeed)url.searchParams.set('seed',seed);if(id==='dex-silhouette')url.searchParams.set('level',state.level);
+    try{history.replaceState(null,'',url);}catch{}
+    renderWorld();renderGame();renderSidebar();
+    if(focus){$('game-panel').focus({preventScroll:true});$('play-view').scrollIntoView({behavior:'instant',block:'start'});}
+  }
+  function renderWorld(){
+    if(active.category==='rift'){$('world-art').innerHTML='<img class="world-champion champion-one" src="assets/themes/graves.jpg" alt=""><img class="world-champion champion-two" src="assets/themes/viego.jpg" alt=""><img class="world-champion champion-three" src="assets/themes/pyke.jpg" alt="">';$('game-banner').innerHTML='<span class="banner-label">LEAGUE OF LEGENDS / CHAMPION ARCHIVE</span><div class="banner-art rift-banner"><img src="assets/themes/graves.jpg" alt=""><img src="assets/themes/viego.jpg" alt=""><img src="assets/themes/pyke.jpg" alt=""></div>';}
+    else if(active.category==='dex'){$('world-art').innerHTML='<img class="world-pokemon pokemon-one" src="assets/themes/charizard.png" alt=""><img class="world-pokemon pokemon-two" src="assets/themes/charmander.png" alt=""><img class="world-pokemon pokemon-three" src="assets/themes/pikachu.png" alt="">';$('game-banner').innerHTML='<span class="dex-lens"></span><span class="dex-lights"><i></i><i></i><i></i></span><span class="banner-label">KANTO FIELD GUIDE <b>001—151</b></span><span class="device-lines"></span>';}
+    else{$('world-art').innerHTML='<span class="world-letter one">A</span><span class="world-letter two">?</span><span class="world-letter three">Z</span>';$('game-banner').innerHTML='<span class="banner-label">THE LETTER ARCADE / A LITTLE BRAINPOWER</span><span class="banner-spark">✦</span>';}
+  }
+  function renderSidebar(){
+    $('side-games').innerHTML=Object.entries(WORLDS).map(([cat,w])=>`<div class="side-group"><p>${w.name}</p>${GAMES.filter(g=>g.category===cat).map(g=>{const s=g.id===active.id?state:loadState(g.id,seedFor(g.id)),p=g.id===active.id?puzzle:getPuzzle(g.id,seedFor(g.id));return `<a class="side-game ${active.id===g.id?'active':''}" href="#${g.id}" ${active.id===g.id?'aria-current="page"':''}>${icon(g.glyph)}<span>${esc(g.name)}</span><small>${status(g,s,p)==='won'?'✓':favorites.includes(g.id)?'♥':''}</small></a>`;}).join('')}</div>`).join('');
+    $('game-select').innerHTML=Object.entries(WORLDS).map(([cat,w])=>`<optgroup label="${w.name}">${GAMES.filter(g=>g.category===cat).map(g=>`<option value="${g.id}" ${g.id===active.id?'selected':''}>${esc(g.name)}</option>`).join('')}</optgroup>`).join('');
+    const solved=GAMES.filter(g=>status(g,loadState(g.id,seedFor(g.id)),getPuzzle(g.id,seedFor(g.id)))==='won').length;$('progress-label').textContent=`${solved} / 18 solved`;
+  }
+  function attemptText(){const t=active.type;if(t==='categories')return`${4-state.wrong.length} mistakes left`;if(t==='ladder')return`${state.guesses.length} steps`;if(t==='hive')return`${hivePoints()} / ${puzzle.goal} points`;if(t==='anagrams')return`${state.found.length} / 5 words`;if(t==='crossword')return`${puzzle.grid.join('').split('').filter((c,i)=>c!=='#'&&state.grid[i]).length} / 21 letters`;if(t==='logic')return`${puzzle.clues.length} clues · ${state.checks} checks`;return`${state.guesses.length} / ${active.max} guesses`;}
+  function renderGame(){
+    $('game-kicker').textContent=active.tag;$('game-title').textContent=active.name;$('game-description').textContent=active.description;$('game-emblem').innerHTML=icon(active.glyph);$('attempt-counter').textContent=attemptText();
+    $('daily-chip').textContent=seed.startsWith('d-')?'DAILY':'FREE PLAY';$('round-label').textContent=seed.startsWith('d-')?`Daily · ${seed.slice(2)}`:'Unlimited · your current round';$('back-daily').hidden=seed===daily();$('game-panel').dataset.game=active.id;
+    $('under-game-note').textContent=active.category==='rift'?'Independent fan-made puzzles. Common positions and regional affiliations use a fixed reference roster.':active.category==='dex'?'Every answer is an original Kanto Pokémon. Types reflect modern typings; evolution stages count Kanto forms only.':'Your progress stays in this browser. Take your time, or challenge the group to beat your result.';
+    updateFavorite();message('');
+    if(active.type==='word')renderWord();else if(active.type==='categories')renderCategories();else if(active.type==='ladder')renderLadder();else if(active.type==='code')renderCode();else if(active.type==='anagrams')renderAnagrams();else if(active.type==='hive')renderHive();else if(active.type==='crossword')renderCrossword();else if(active.type==='logic')renderLogic();else renderRoster();
+    renderHints();renderResult();updateSaved();hydrateArt();lastReveal=false;
+  }
+  function finishAction(before){save();renderGame();renderSidebar();if(before!=='won'&&status()==='won')celebrate();}
+  function legend(word=false){return `<div class="inline-legend"><span><i class="match">✓</i> ${word?'Right spot':'Correct'}</span><span><i class="partial">≈</i> ${word?'Wrong spot':'Partial'}</span><span><i class="miss">×</i> ${word?'Not in word':'Incorrect'}</span>${word?'':'<span class="arrow-legend">↑ ↓ Go higher / lower</span>'}</div>`;}
+  function renderWord(){
+    const keyColors={},rank={miss:1,partial:2,match:3};let board='';
+    for(let r=0;r<6;r++){const word=state.guesses[r]||(r===state.guesses.length&&status()==='playing'?typed:'');const score=state.guesses[r]?E.scoreWord(word,puzzle.answer):null;for(let c=0;c<5;c++){const ch=word[c]||'',v=score?.[c];if(v&&(!keyColors[ch]||rank[v]>rank[keyColors[ch]]))keyColors[ch]=v;board+=`<div class="letter-tile ${v|| (ch?'filled':'')} ${lastReveal&&r===state.guesses.length-1?'flip-in':''}" style="--i:${c}" aria-label="Row ${r+1}, letter ${c+1}: ${ch.toUpperCase()||'empty'}${v?', '+({match:'correct spot',partial:'wrong spot',miss:'not in word'}[v]):''}">${ch.toUpperCase()}${v?`<small>${v==='match'?'✓':v==='partial'?'·':'×'}</small>`:''}</div>`;}}
+    const keyboard=['qwertyuiop','asdfghjkl','↵zxcvbnm⌫'].map(row=>`<div class="key-row">${[...row].map(k=>`<button class="key ${keyColors[k]||''} ${'↵⌫'.includes(k)?'wide':''}" data-key="${k}" ${status()!=='playing'?'disabled':''} aria-label="${k==='↵'?'Submit guess':k==='⌫'?'Delete letter':k}">${k==='↵'?'ENTER':k}</button>`).join('')}</div>`).join('');
+    $('game-content').innerHTML=legend(true)+`<div class="word-board" aria-label="Six guesses of five letters">${board}</div><div class="keyboard">${keyboard}</div>`;
+    document.querySelectorAll('[data-key]').forEach(b=>b.addEventListener('click',()=>inputWord(b.dataset.key)));
+  }
+  function inputWord(k){if(status()!=='playing')return;message('');if(k==='Enter'||k==='↵'){if(!/^[a-z]{5}$/.test(typed))return message('Use all five letters.',true);if(!WORDS.has(typed))return message('That word isn’t in this dictionary.',true);if(state.guesses.includes(typed))return message('You already tried that word.',true);state.guesses.push(typed);typed='';lastReveal=true;finishAction('playing');return;}if(k==='Backspace'||k==='Delete'||k==='⌫')typed=typed.slice(0,-1);else if(/^[a-z]$/i.test(k)&&typed.length<5)typed+=k.toLowerCase();renderWord();}
+  function genericForm(label,placeholder,max=30,inputmode='text',id='answer-input'){return `<form id="answer-form" class="answer-form" autocomplete="off"><label class="visually-hidden" for="${id}">${label}</label><input id="${id}" class="guess-input" type="text" maxlength="${max}" inputmode="${inputmode}" placeholder="${placeholder}" autocapitalize="off" spellcheck="false" autocomplete="off"><button class="primary-button" type="submit">${active.type==='ladder'?'Add step':'Submit'} <span>↵</span></button></form>`;}
+  function bindForm(callback,id='answer-input'){$('answer-form')?.addEventListener('submit',event=>{event.preventDefault();callback($(id).value);});}
+  function renderCategories(){
+    const finished=status()!=='playing';const solvedNames=state.solved;const solved=puzzle.groups.filter(g=>solvedNames.includes(g.name));
+    const remainder=puzzle.groups.filter(g=>!solvedNames.includes(g.name));const remainingWords=puzzle.words.filter(w=>!solved.some(g=>g.words.includes(w)));const order=A.shuffle(remainingWords,A.random(seed+':groups:'+state.shuffles));
+    $('game-content').innerHTML=`<div class="category-board">${solved.map((g,i)=>`<div class="solved-group color-${puzzle.groups.indexOf(g)}"><strong>${esc(g.name)}</strong><span>${g.words.map(esc).join(' · ')}</span></div>`).join('')}${status()==='lost'?remainder.map(g=>`<div class="solved-group unsolved color-${puzzle.groups.indexOf(g)}"><strong>${esc(g.name)}</strong><span>${g.words.map(esc).join(' · ')}</span></div>`).join(''):`<div class="category-tiles">${order.map(w=>`<button class="category-tile ${selected.includes(w)?'selected':''}" data-category-word="${esc(w)}" aria-pressed="${selected.includes(w)}">${esc(w.replaceAll('-',' '))}</button>`).join('')}</div>`}</div>${!finished?`<div class="selection-note"><span id="selection-count">${selected.length} of 4 selected</span><span class="lives">${Array.from({length:4},(_,i)=>`<i class="${i<4-state.wrong.length?'alive':''}"></i>`).join('')}</span></div><div class="puzzle-actions"><button class="outline-button" id="shuffle-groups">⤨ Shuffle</button><button class="quiet-button" id="clear-group">Deselect</button><button class="primary-button" id="submit-group" ${selected.length===4?'':'disabled'}>Check group ↵</button></div>`:''}`;
+    document.querySelectorAll('[data-category-word]').forEach(b=>b.addEventListener('click',()=>{const w=b.dataset.categoryWord;if(selected.includes(w))selected=selected.filter(x=>x!==w);else if(selected.length<4)selected.push(w);else return message('Choose four words at a time.');renderCategories();message('');}));
+    $('shuffle-groups')?.addEventListener('click',()=>{state.shuffles++;save();renderCategories();});$('clear-group')?.addEventListener('click',()=>{selected=[];renderCategories();});$('submit-group')?.addEventListener('click',submitGroup);
+  }
+  function submitGroup(){if(selected.length!==4||status()!=='playing')return;const group=puzzle.groups.find(g=>selected.every(w=>g.words.includes(w)));const signature=[...selected].sort().join('|');if(state.wrong.includes(signature))return message('You already tried those four. Try a different connection.',true);if(group){state.solved.push(group.name);selected=[];finishAction('playing');if(status()==='playing')message('Connection found. Keep going!');}else{state.wrong.push(signature);const close=puzzle.groups.some(g=>selected.filter(w=>g.words.includes(w)).length===3);finishAction('playing');if(status()==='playing')message(close?'One away! Three of those words belong together.':'That set doesn’t share one of the hidden connections.',true);}}
+  function renderLadder(){const chain=[puzzle.start,...state.guesses];$('game-content').innerHTML=`<div class="ladder-endpoints"><div><span>FROM</span><strong>${puzzle.start}</strong></div><i>→</i><div><span>TO</span><strong>${puzzle.end}</strong></div></div><div class="ladder-path">${chain.map((w,i)=>`<div class="ladder-step"><span>${String(i).padStart(2,'0')}</span><div>${[...w].map((c,j)=>`<i class="${i&&c!==chain[i-1][j]?'changed':''}">${c}</i>`).join('')}</div>${i===chain.length-1?'<small>YOU ARE HERE</small>':''}</div>`).join('')}</div>${status()==='playing'?genericForm('Next ladder word','Change exactly one letter…',5):''}<p class="board-note">Every step must be a real five-letter word. You can revisit a word to backtrack.</p>`;bindForm(value=>{const w=value.trim().toLowerCase(),previous=state.guesses.at(-1)||puzzle.start;if(!WORDS.has(w))return message('Use a real five-letter word from the dictionary.',true);if(A.difference(previous,w)!==1)return message('Change exactly one letter; keep the other four in place.',true);state.guesses.push(w);finishAction('playing');$('answer-input')?.focus({preventScroll:true});});}
+  function renderCode(){const finished=status()!=='playing';$('game-content').innerHTML=`<div class="code-lock"><span>VAULT // ${finished?'UNSEALED':'LOCKED'}</span><div>${[...(finished?puzzle.answer:'????')].map(c=>`<i>${c}</i>`).join('')}</div><p>Four digits from <b>1–6</b>. Digits can repeat.</p></div><div class="code-legend"><span><i class="match">●</i> Right digit, right spot</span><span><i class="partial">●</i> Right digit, different spot</span></div><div class="code-history">${state.guesses.map((g,i)=>{const f=A.codeScore(g,puzzle.answer);return`<div class="code-row"><span>${i+1}</span><strong>${[...g].map(x=>`<i>${x}</i>`).join('')}</strong><div class="code-feedback"><div>${Array.from({length:4},(_,n)=>`<b class="${n<f.exact?'match':n<f.exact+f.misplaced?'partial':'miss'}"></b>`).join('')}</div><small>${f.exact} exact · ${f.misplaced} misplaced</small></div></div>`;}).join('')}</div>${finished?'':genericForm('Four-digit code','Enter four digits…',4,'numeric')+`<div class="number-pad">${[1,2,3,4,5,6].map(n=>`<button data-number="${n}">${n}</button>`).join('')}<button data-number="back" aria-label="Delete digit">⌫</button></div>`}<p class="board-note">Feedback counts the whole guess. The dots do not identify specific positions.</p>`;bindForm(value=>{const g=value.trim();if(!/^[1-6]{4}$/.test(g))return message('Enter four digits using 1 through 6.',true);if(state.guesses.includes(g))return message('You already tried that code.',true);state.guesses.push(g);finishAction('playing');$('answer-input')?.focus({preventScroll:true});});document.querySelectorAll('[data-number]').forEach(b=>b.addEventListener('click',()=>{const el=$('answer-input');el.value=b.dataset.number==='back'?el.value.slice(0,-1):(el.value+b.dataset.number).slice(0,4);el.focus({preventScroll:true});}));}
+  function renderAnagrams(){const n=state.found.length,finished=status()!=='playing';const scrambled=puzzle.scrambles[Math.min(n,4)];$('game-content').innerHTML=`<div class="round-dots">${puzzle.words.map((_,i)=>`<span class="${i<n?'done':i===n?'current':''}">${i<n?'✓':i+1}</span>`).join('')}</div>${finished?'':`<p class="center-eyebrow">UNSCRAMBLE WORD ${n+1} OF 5</p><div class="anagram-letters">${[...scrambled].map((c,i)=>`<i style="--i:${i}">${c}</i>`).join('')}</div>${genericForm('Unscrambled word','Find a five-letter word…',5)}<p class="board-note">${8-state.wrong.length} misses left. Any valid anagram in the dictionary is accepted.</p>`}<div class="found-words">${state.found.map(w=>`<span>✓ ${esc(w)}</span>`).join('')}</div>`;bindForm(value=>{const w=value.trim().toLowerCase(),target=puzzle.words[state.found.length];if(!/^[a-z]{5}$/.test(w))return message('Use five letters.',true);if(w.split('').sort().join('')===target.split('').sort().join('')&&WORDS.has(w)){state.found.push(w);finishAction('playing');}else{const sig=state.found.length+':'+w;if(state.wrong.includes(sig))return message('You already tried that word for this scramble.',true);state.wrong.push(sig);finishAction('playing');if(status()==='playing')message('That doesn’t form a word from these letters. Give it another try.',true);}$('answer-input')?.focus({preventScroll:true});});}
+  function renderHive(){const points=hivePoints(),p=puzzle;$('game-content').innerHTML=`<div class="hive-progress"><div><strong>${points}</strong><span>points</span></div><div class="score-track"><i style="width:${Math.min(100,points/p.goal*100)}%"></i></div><span>${p.goal} to win</span></div><div class="honeycomb"><button class="hex center-hex" data-hive-letter="${p.center}" aria-label="Center letter ${p.center}">${p.center}</button>${p.outer.map((l,i)=>`<button class="hex hex-${i}" data-hive-letter="${l}" aria-label="Letter ${l}">${l}</button>`).join('')}</div>${genericForm('Word containing the center letter',`Use ${p.center.toUpperCase()} in every word…`,12)}<p class="board-note">At least 4 letters. Reuse letters as often as you like.<br>Four-letter words earn 1 point; longer words earn their length. Use all 7 letters for a 7-point bonus.</p><div class="found-heading"><strong>${state.found.length} words found</strong><span>${p.words.length} in this puzzle</span></div><div class="found-words">${state.found.length?state.found.map(w=>`<span class="${new Set(w).size===7?'pangram':''}">${esc(w)} <small>+${A.hiveScore(w)}</small></span>`).join(''):'<p>Your collection starts with one word.</p>'}</div>`;document.querySelectorAll('[data-hive-letter]').forEach(b=>b.addEventListener('click',()=>{const inp=$('answer-input');inp.value=(inp.value+b.dataset.hiveLetter).slice(0,12);inp.focus({preventScroll:true});}));bindForm(value=>{const w=value.trim().toLowerCase();if(w.length<4)return message('Use at least four letters.',true);if(!w.includes(p.center))return message(`Every word needs the center letter, ${p.center.toUpperCase()}.`,true);if([...w].some(c=>!p.letters.includes(c)))return message('Use only the seven letters in the hive.',true);if(state.found.includes(w))return message('That word is already in your collection.');if(!p.words.includes(w))return message('That word isn’t in this puzzle’s dictionary.',true);const before=status();state.found.push(w);finishAction(before);message(new Set(w).size===7?`Pangram! +${A.hiveScore(w)} points.`:`Nice find. +${A.hiveScore(w)} points.`);$('answer-input')?.focus({preventScroll:true});});}
+  function renderCrossword(){
+    const finished=status()==='won';if(!crosswordEntry)crosswordEntry=puzzle.entries[0].id;const entry=puzzle.entries.find(e=>e.id===crosswordEntry)||puzzle.entries[0];
+    const numbers=Object.fromEntries(puzzle.entries.map(e=>[e.cells[0],e.number]));
+    $('game-content').innerHTML=`<div class="crossword-layout"><div><div class="current-clue" id="current-clue"><b>${entry.number} ${entry.dir}</b><span>${esc(entry.clue)}</span></div><div class="crossword-grid" role="group" aria-label="Five by five mini crossword">${puzzle.grid.join('').split('').map((c,i)=>c==='#'?'<div class="cross-black"></div>':`<label class="cross-square ${entry.cells.includes(i)?'highlight':''} ${state.revealed.includes(i)?'revealed':''}" data-square="${i}">${numbers[i]?`<small>${numbers[i]}</small>`:''}<input class="cross-input" data-cell="${i}" aria-label="Row ${Math.floor(i/5)+1}, column ${i%5+1}${numbers[i]?', clue '+numbers[i]:''}" maxlength="1" value="${esc(state.grid[i])}" autocomplete="off" autocapitalize="characters" spellcheck="false" ${finished?'readonly':''}></label>`).join('')}</div></div><div class="crossword-clues">${['across','down'].map(dir=>`<h3>${dir}</h3>${puzzle.entries.filter(e=>e.dir===dir).map(e=>`<button class="cross-clue ${e.id===entry.id?'active':''}" data-entry="${e.id}"><b>${e.number}</b><span>${esc(e.clue)}</span></button>`).join('')}`).join('')}</div></div>${finished?'':'<div class="puzzle-actions"><button class="outline-button" id="check-crossword">Check my grid ↵</button><button class="quiet-button" id="clear-wrong">Clear incorrect letters</button></div>'}<p class="board-note">Tap a clue to switch direction. Arrow keys move through the grid. Checks and reveals are marked on your shared result.</p>`;
+    document.querySelectorAll('[data-entry]').forEach(b=>b.addEventListener('click',()=>{crosswordEntry=b.dataset.entry;crossCell=puzzle.entries.find(e=>e.id===crosswordEntry).cells[0];renderCrossword();document.querySelector(`[data-cell="${crossCell}"]`).focus();}));
+    document.querySelectorAll('[data-cell]').forEach(inp=>{
+      const i=Number(inp.dataset.cell);
+      inp.addEventListener('focus',()=>{crossCell=i;if(!puzzle.entries.find(e=>e.id===crosswordEntry)?.cells.includes(i))crosswordEntry=puzzle.entries.find(e=>e.cells.includes(i)).id;highlightCrossword();inp.select();});
+      inp.addEventListener('input',()=>{if(finished)return;const v=inp.value.replace(/[^a-z]/gi,'').slice(-1).toLowerCase();inp.value=v;state.grid[i]=v;save();$('attempt-counter').textContent=attemptText();if(status()==='won'){finishAction('playing');return;}if(v)moveCross(i,1);});
+      inp.addEventListener('keydown',event=>{if(finished)return;if(event.key==='Enter'){event.preventDefault();checkCrossword();}else if(event.key==='Backspace'&&!inp.value){event.preventDefault();moveCross(i,-1);}else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();const delta={ArrowLeft:-1,ArrowRight:1,ArrowUp:-5,ArrowDown:5}[event.key];let next=i+delta;while(next>=0&&next<25&&puzzle.grid.join('')[next]==='#')next+=delta;if(next>=0&&next<25&&(!['ArrowLeft','ArrowRight'].includes(event.key)||Math.floor(next/5)===Math.floor(i/5)))document.querySelector(`[data-cell="${next}"]`)?.focus();}});
+      inp.addEventListener('paste',event=>{if(finished)return;const letters=event.clipboardData.getData('text').replace(/[^a-z]/gi,'').toLowerCase();if(!letters)return;event.preventDefault();const current=puzzle.entries.find(e=>e.id===crosswordEntry);const start=current.cells.indexOf(i);current.cells.slice(start).forEach((cell,j)=>{if(letters[j])state.grid[cell]=letters[j];});finishAction('playing');});
+    });
+    $('check-crossword')?.addEventListener('click',checkCrossword);$('clear-wrong')?.addEventListener('click',()=>{state.checks++;const chars=puzzle.grid.join('');state.grid=state.grid.map((v,i)=>v&&v!==chars[i]?'':v);save();renderGame();message('Incorrect letters cleared. Keep filling the grid.');});
+  }
+  function moveCross(i,dir){const e=puzzle.entries.find(e=>e.id===crosswordEntry),next=e.cells[e.cells.indexOf(i)+dir];if(next!==undefined)document.querySelector(`[data-cell="${next}"]`)?.focus();}
+  function highlightCrossword(){const entry=puzzle.entries.find(e=>e.id===crosswordEntry);document.querySelectorAll('[data-square]').forEach(el=>el.classList.toggle('highlight',entry.cells.includes(Number(el.dataset.square))));document.querySelectorAll('[data-entry]').forEach(el=>el.classList.toggle('active',el.dataset.entry===entry.id));$('current-clue').innerHTML=`<b>${entry.number} ${entry.dir}</b><span>${esc(entry.clue)}</span>`;}
+  function checkCrossword(){if(status()==='won')return;state.checks++;save();let wrong=0,empty=0;const chars=puzzle.grid.join('');document.querySelectorAll('[data-square]').forEach(el=>{const i=Number(el.dataset.square);if(!state.grid[i])empty++;const bad=!!state.grid[i]&&state.grid[i]!==chars[i];if(bad)wrong++;el.classList.toggle('incorrect',bad);el.classList.toggle('checked-correct',!!state.grid[i]&&!bad);});message(wrong?`${wrong} incorrect ${wrong===1?'letter is':'letters are'} marked in red${empty?`; ${empty} spaces are still empty`:''}.`:empty?`Everything entered is correct. ${empty} spaces to go.`:'Grid solved!');}
+  function logicClue(c){const [kind,a,b,yes]=c,p=puzzle;return kind==='pet'?`${p.people[a]} ${yes?'has':'does not have'} ${p.pets[b]}.`:kind==='town'?`${p.people[a]} ${yes?'visited':'did not visit'} ${p.towns[b]}.`:`The trainer with ${p.pets[a]} ${yes?'visited':'did not visit'} ${p.towns[b]}.`;}
+  function renderLogic(){const finished=status()==='won';$('game-content').innerHTML=`<div class="case-heading"><span>CASE FILE</span><strong>Three trainers, one tangled itinerary.</strong><p>Each trainer has a different Pokémon and visited a different place. There is exactly one solution.</p></div><ol class="logic-clues">${puzzle.clues.map(c=>`<li>${esc(logicClue(c))}</li>`).join('')}</ol><div class="logic-grid"><div class="logic-table-head"><span>TRAINER</span><span>POKÉMON</span><span>VISITED</span></div>${puzzle.people.map((name,i)=>`<div class="logic-row"><strong><i>${name[0]}</i>${name}</strong>${['pets','towns'].map(kind=>`<label><span class="visually-hidden">${name}’s ${kind==='pets'?'Pokémon':'destination'}</span><select data-logic="${kind}" data-person="${i}" ${finished?'disabled':''}><option value="-1">Choose…</option>${puzzle[kind].map((value,n)=>`<option value="${n}" ${state[kind][i]===n?'selected':''}>${esc(value)}</option>`).join('')}</select></label>`).join('')}</div>`).join('')}</div>${finished?'':'<div class="puzzle-actions"><button class="primary-button" id="check-logic">Check the case ↵</button></div>'}`;document.querySelectorAll('[data-logic]').forEach(el=>el.addEventListener('change',()=>{state[el.dataset.logic][Number(el.dataset.person)]=Number(el.value);save();}));$('check-logic')?.addEventListener('click',checkLogic);}
+  function checkLogic(){if(state.pets.includes(-1)||state.towns.includes(-1))return message('Fill every Pokémon and destination before checking.',true);if(new Set(state.pets).size<3||new Set(state.towns).size<3)return message('Each Pokémon and destination must be used exactly once.',true);state.checks++;const wrong=puzzle.clues.filter(c=>!A.satisfies(state,c)).length;finishAction('playing');if(wrong)message(`${wrong} ${wrong===1?'clue doesn’t':'clues don’t'} fit your arrangement yet. Read the evidence again.`,true);}
+  function roster(){return active.id==='rift-classic'?P.league:active.category==='rift'?D.rift:P.dex;}
+  function thumbnail(item){return art(active.category==='rift'?'rift-thumb':'dex-thumb',item.id,'portrait');}
+  function formatValue(v){return Array.isArray(v)?v.join(' / '):v;}
+  function tableFields(){return active.category==='rift'?CLASSIC_RIFT:active.type==='types'?[['types','Type(s)'],['color','Color'],['stage','Evo. stage']]:CLASSIC_DEX;}
+  function renderClueTable(){const fields=tableFields(),items=roster();return legend()+`<p class="table-guide">Read each column separately. Arrows mean the answer’s value is higher or lower than your guess.</p><div class="clue-scroll" role="region" aria-label="Guess feedback; scroll horizontally to see all clues" tabindex="0"><table class="clue-table"><thead><tr><th scope="col">${active.category==='rift'?'Champion':'Pokémon'}</th>${fields.map(f=>`<th scope="col">${f[1]}</th>`).join('')}</tr></thead><tbody>${state.guesses.map((id,i)=>({id,i})).reverse().map(({id,i})=>{const c=items.find(x=>x.id===id);if(!c)return'';return`<tr><th scope="row" class="name-cell">${thumbnail(c)}<span>${esc(c.name)}</span><small>GUESS ${i+1}</small></th>${fields.map(([key],j)=>{const result=E.compare(c[key],puzzle.target[key]);const color=['higher','lower'].includes(result)?'miss':result;const symbol={match:'✓',partial:'≈',miss:'×',higher:'↑',lower:'↓'}[result];const label={match:'Correct',partial:'Partial match',miss:'Incorrect',higher:'Go higher',lower:'Go lower'}[result];return`<td class="clue-cell ${color} ${lastReveal&&i===state.guesses.length-1?'cell-reveal':''}" style="--i:${j}"><span class="clue-symbol">${symbol}</span><strong>${esc(formatValue(c[key]))}</strong><small>${label}</small></td>`;}).join('')}</tr>`;}).join('')}</tbody></table></div>${state.guesses.length?'':'<div class="first-guess"><span>?</span><div><strong>Your first guess opens the case.</strong><p>Start with any name you know. Every column gives you a clue.</p></div></div>'}`;}
+  function visual(){
+    const t=active.type,n=state.guesses.length,finished=status()!=='playing',target=puzzle.target;
+    if(t==='riddle')return `<div class="riddle-card"><span class="big-quote">“</span><p>${esc(puzzle.clue.lines[puzzle.line])}</p><span>ORIGINAL CHAMPION RIDDLE · WHO AM I?</span></div>`;
+    if(t==='description')return `<div class="field-note"><span class="field-note-tag">FIELD NOTE / KANTO</span><p>${esc(target.description)}</p><span class="field-note-rule"></span><small>Identify the Pokémon described by this entry.</small></div>`;
+    if(t==='emoji'){const count=finished?4:Math.min(4,2+n);return`<div class="emoji-stage"><span class="center-eyebrow">NAME THE CHAMPION</span><div class="emoji-slots">${puzzle.clue.emoji.map((x,i)=>`<span class="${i<count?'emoji-unlocked':''}">${i<count?x:'?'}</span>`).join('')}</div><p>${count===4?'All clues revealed. Connect the symbols.':'Another symbol appears after each wrong guess.'}</p></div>`;}
+    if(t==='ability')return`<div class="ability-stage puzzle-visual"><span class="center-eyebrow">RECOGNIZE THE ABILITY</span><div class="ability-frame">${art('ability',puzzle.ability.id,'ability-image',finished?puzzle.ability.name:'Mystery ability icon')}</div><span class="ability-slot">${n>=2||finished?puzzle.ability.slot+' ABILITY':'Q, W, E, OR R?'}</span>${n>=4||finished?`<strong class="ability-name">${esc(puzzle.ability.name)}</strong>`:''}<p>After 2 misses: ability slot. After 4: ability name.</p></div>`;
+    if(t==='splash'){const zoom=finished?1:[4.8,4,3.3,2.5,1.8,1.25][Math.min(n,5)];return`<div class="splash-stage puzzle-visual"><div class="splash-window" style="--zoom:${zoom};--crop-x:${puzzle.x}%;--crop-y:${puzzle.y}%">${art('splash',target.id,'splash-image',finished?target.name:'Cropped mystery champion splash artwork')}</div><span class="scan-corner a"></span><span class="scan-corner b"></span><span class="visual-label">${finished?'FULL PICTURE':`SPLASH SCAN · ${n+1} / 6`}</span></div><p class="board-note">Each wrong guess zooms out. All art uses the champion’s base skin.</p>`;}
+    if(t==='card'){const blur=finished?0:[22,17,12,8,5,2][Math.min(n,5)];return`<div class="mystery-card-stage puzzle-visual"><div class="pokemon-card ${finished?'card-unlocked':''}"><div class="poke-card-top"><span>${finished?esc(target.name):'UNKNOWN SPECIMEN'}</span><i>✦</i></div><div class="poke-card-picture">${art('pokemon',target.id,'card-creature',finished?target.name:'Blurred mystery Pokémon artwork')}<div class="card-blur" style="--blur:${blur}px"></div></div><div class="poke-card-bottom"><span>${finished?'#'+String(target.number).padStart(3,'0'):'NO. ???'}</span><span>${finished?'ENTRY IDENTIFIED':'CLASSIFIED'}</span></div><div class="holo-shine"></div></div><span class="card-stage-label">${finished?'REVEALED':`FOCUS LEVEL ${n+1} / 6`}</span></div><p class="board-note">A fan-made field card. Every miss makes the artwork clearer.</p>`;}
+    if(t==='silhouette'){const hard=state.level==='hard',zoom=finished?1:hard?[2.8,2.45,2.05,1.65,1.3,1][Math.min(n,5)]:1;const angle=finished||!hard?0:puzzle.angle*(1-Math.min(n,5)/5);return`<div class="difficulty-toggle" aria-label="Silhouette difficulty"><button data-level="hard" class="${hard?'active':''}" ${n?'disabled':''}>Hard · cropped shadow</button><button data-level="normal" class="${hard?'':'active'}" ${n?'disabled':''}>Classic outline</button></div><div class="silhouette-stage puzzle-visual ${finished?'revealed':''}" style="--zoom:${zoom};--tilt:${angle}deg"><div class="radar-circle"></div><div class="silhouette-window">${art('pokemon',target.id,'silhouette-image',finished?target.name:'Cropped, tilted Pokémon silhouette')}</div><span class="scanline"></span><span class="visual-label">${finished?'POKÉDEX ENTRY IDENTIFIED':hard?`CLOSE-UP SHADOW · SCAN ${n+1} / 6`:'CLASSIC SILHOUETTE'}</span></div><p class="board-note">${hard?'The first scan hides most of the outline. Each miss zooms out and straightens the shadow.':'The full outline is visible. Use Hard mode next round for a tougher challenge.'}</p>`;}
+    return'';
+  }
+  function guessForm(){return `<form id="guess-form" class="guess-form" autocomplete="off"><label class="visually-hidden" for="guess-input">${active.category==='rift'?'Champion':'Pokémon'} name</label><div class="input-row"><input id="guess-input" class="guess-input" placeholder="Type a ${active.category==='rift'?'champion':'Pokémon'} name…" maxlength="60" spellcheck="false" autocomplete="off" autocapitalize="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions"><button class="primary-button" type="submit">Guess <span>↵</span></button></div><div class="suggestions" id="suggestions" role="listbox" aria-label="Matching names" hidden></div><p class="input-note">${roster().length} ${active.category==='rift'?'champions':'original Kanto Pokémon'} · Type a name or use ↑ ↓ and Enter</p></form>`;}
+  function renderRoster(){const finished=status()!=='playing',isTable=['classic','types'].includes(active.type);$('game-content').innerHTML=(isTable?'':visual())+(finished?'':guessForm())+(isTable?renderClueTable():`<div class="guess-history">${state.guesses.map(id=>{const c=roster().find(x=>x.id===id);if(!c)return'';return`<div class="past-guess ${id===puzzle.target.id?'correct':'wrong'}">${thumbnail(c)}<span>${esc(c.name)}</span><b>${id===puzzle.target.id?'✓ Correct':'× Incorrect'}</b></div>`;}).join('')}</div>`);
+    $('guess-form')?.addEventListener('submit',e=>{e.preventDefault();submitRoster(selectedSuggestion>=0?suggestions[selectedSuggestion]?.id:$('guess-input').value);});
+    $('guess-input')?.addEventListener('input',updateSuggestions);$('guess-input')?.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSuggestions();return;}if(['ArrowDown','ArrowUp'].includes(e.key)&&suggestions.length){e.preventDefault();selectedSuggestion=(selectedSuggestion+(e.key==='ArrowDown'?1:suggestions.length-1)+suggestions.length)%suggestions.length;document.querySelectorAll('.suggestion').forEach((b,i)=>{b.classList.toggle('selected',i===selectedSuggestion);b.setAttribute('aria-selected',String(i===selectedSuggestion));});$('guess-input').setAttribute('aria-activedescendant',`suggestion-${selectedSuggestion}`);$(`suggestion-${selectedSuggestion}`).scrollIntoView({block:'nearest'});}});
+    document.querySelectorAll('[data-level]').forEach(b=>b.addEventListener('click',()=>{state.level=b.dataset.level;save();const url=new URL(location.href);url.searchParams.set('level',state.level);history.replaceState(null,'',url);renderGame();}));closeSuggestions();
+  }
+  function updateSuggestions(){const value=E.normalize($('guess-input').value);suggestions=value?roster().filter(x=>!state.guesses.includes(x.id)&&(E.normalize(x.name).includes(value)||E.normalize(x.id).includes(value))).sort((a,b)=>Number(E.normalize(b.name).startsWith(value))-Number(E.normalize(a.name).startsWith(value))||a.name.localeCompare(b.name)).slice(0,7):[];selectedSuggestion=-1;const list=$('suggestions');list.hidden=!suggestions.length;$('guess-input').setAttribute('aria-expanded',String(!!suggestions.length));$('guess-input').removeAttribute('aria-activedescendant');list.innerHTML=suggestions.map((c,i)=>`<div role="option" tabindex="-1" aria-selected="false" class="suggestion" id="suggestion-${i}" data-choice="${esc(c.id)}">${thumbnail(c)}<strong>${esc(c.name)}</strong><span>${active.category==='dex'?'#'+String(c.number).padStart(3,'0'):'Select ↵'}</span></div>`).join('');list.querySelectorAll('[data-choice]').forEach(b=>b.addEventListener('click',()=>submitRoster(b.dataset.choice)));hydrateArt();}
+  function closeSuggestions(){suggestions=[];selectedSuggestion=-1;if($('suggestions'))$('suggestions').hidden=true;$('guess-input')?.setAttribute('aria-expanded','false');$('guess-input')?.removeAttribute('aria-activedescendant');}
+  function submitRoster(value){if(status()!=='playing')return;const normalized=E.normalize(value);let guess=roster().find(c=>c.id===value||E.normalize(c.name)===normalized||E.normalize(c.id)===normalized);if(!guess&&suggestions.length===1)guess=suggestions[0];if(!guess)return message('Choose a name from the suggestions.',true);if(state.guesses.includes(guess.id))return message('You already tried that one. Pick another name.',true);state.guesses.push(guess.id);lastReveal=true;finishAction('playing');if(status()==='playing'){$('guess-input')?.focus({preventScroll:true});if(!['classic','types'].includes(active.type))message(`${guess.name} isn’t the answer. ${active.max-state.guesses.length} guesses left.`);}}
+  function renderHints(){
+    if(status()!=='playing'||active.type==='word'||active.type==='code'){$('game-hints').innerHTML='';return;}
+    const rosterGame=active.category!=='word';const unlock=rosterGame?3:0;const disabled=rosterGame&&(state.guesses.length<unlock||state.hint>0);
+    let hintText='Hints are optional and marked on your result.';
+    if(rosterGame&&state.guesses.length<3)hintText=`Unlocks after ${3-state.guesses.length} more ${3-state.guesses.length===1?'guess':'guesses'}.`;
+    let revealed='';
+    if(state.hint){if(rosterGame)revealed=active.category==='rift'?puzzle.target.title:puzzle.target.genus;else if(active.type==='categories'){const g=puzzle.groups.find(x=>!state.solved.includes(x.name));revealed=g?`Look for: ${g.name}.`:'';}else if(active.type==='anagrams')revealed=`One solution starts with ${puzzle.words[Math.min(state.found.length,4)][0].toUpperCase()}.`;else if(active.type==='hive'){const remaining=puzzle.words.find(w=>!state.found.includes(w));revealed=remaining?`Try a ${remaining.length}-letter word starting with ${remaining.slice(0,2).toUpperCase()}.`:'';}}
+    $('game-hints').innerHTML=`<div class="hint-row"><button class="hint-button" id="hint-button" ${disabled?'disabled':''}>${icon('bolt')} ${active.type==='crossword'?'Reveal selected letter':active.type==='ladder'?'Suggest next step':active.type==='logic'?'Reveal one assignment':state.hint&&rosterGame?'Hint revealed':'Need a hint?'}</button><small>${hintText}</small></div>${revealed?`<div class="hint-content">${esc(revealed)}</div>`:''}`;
+    $('hint-button')?.addEventListener('click',useHint);
+  }
+  function useHint(){
+    if(status()!=='playing')return;const t=active.type;state.hint++;
+    if(t==='ladder'){const current=state.guesses.at(-1)||puzzle.start,path=A.ladderPath(current,puzzle.end,WORDS);save();renderGame();message(path?.[1]?`Try ${path[1].toUpperCase()} next. You still need to enter the step.`:'Backtrack to your previous word and try another route.');return;}
+    if(t==='crossword'){const chars=puzzle.grid.join('');let cell=crossCell;if(chars[cell]==='#'||state.grid[cell]===chars[cell])cell=[...chars].findIndex((c,i)=>c!=='#'&&state.grid[i]!==c);if(cell>=0){state.grid[cell]=chars[cell];state.revealed.push(cell);}finishAction('playing');return;}
+    if(t==='logic'){for(const kind of ['pets','towns']){const i=state[kind].findIndex((v,n)=>v!==puzzle.solution[kind][n]);if(i>=0){state[kind][i]=puzzle.solution[kind][i];save();renderGame();message(`${puzzle.people[i]} ${kind==='pets'?'has':'visited'} ${puzzle[kind][state[kind][i]]}.`);return;}}}
+    save();renderHints();
+  }
+  function answerName(){if(active.type==='word'||active.type==='code')return puzzle.answer.toUpperCase();if(puzzle.target)return puzzle.target.name;if(active.type==='ladder')return puzzle.end.toUpperCase();return'';}
+  function renderResult(){const outcome=status();if(outcome==='playing'){$('game-result').innerHTML='';return;}const won=outcome==='won';let detail=active.type==='hive'?'You reached the target. Keep collecting words, or start a fresh hive.':won?'Send the result to your friends. There’s always another round.':'The answer is revealed. Start a fresh puzzle whenever you’re ready.';
+    if(active.type==='anagrams'&&!won)detail=`Possible answers: ${puzzle.words.join(', ').toUpperCase()}.`;
+    if(active.type==='ladder')detail=`You connected the words in ${state.guesses.length} steps. One reference route uses ${puzzle.path.length-1}. Other valid routes count too.`;
+    const name=answerName();const pic=puzzle.target?art(active.category==='rift'?'rift-thumb':'pokemon',puzzle.target.id,'result-portrait',puzzle.target.name):`<span class="result-star">${won?'✦':'↻'}</span>`;
+    $('game-result').innerHTML=`<div class="result-card ${won?'won':'lost'}"><div class="result-top">${pic}<div><p class="eyebrow">${won?'NICELY DONE':'CASE CLOSED'}</p><h2>${won?(active.type==='logic'?'Case solved.':active.type==='crossword'?'Every square, sorted.':'You cracked it.'):'A fresh puzzle awaits.'}</h2>${name?`<strong class="answer-name">${esc(name)}</strong>`:''}</div></div><p>${esc(detail)}</p><div class="result-actions"><button class="primary-button" id="result-new">Play another ↻</button><button class="outline-button" id="result-share">Copy result ↗</button></div></div>`;$('result-new').addEventListener('click',newPuzzle);$('result-share').addEventListener('click',()=>copy(shareText(),'Your spoiler-free result'));
+  }
+  function puzzleIdentity(p){return p.target?.id||p.answer||(p.start?p.start+'-'+p.end:JSON.stringify(p));}
+  function newPuzzle(){
+    if(!active)return;const old=puzzle;let next;for(let i=0;i<8;i++){const arr=new Uint32Array(2);if(window.crypto?.getRandomValues)crypto.getRandomValues(arr);else{arr[0]=Date.now()>>>0;arr[1]=Math.floor(Math.random()*2**32);}next='p-'+[...arr].map(x=>x.toString(36)).join('');if(puzzleIdentity(getPuzzle(active.id,next))!==puzzleIdentity(old)||!puzzle.target&&!puzzle.answer&&!puzzle.start)break;}
+    const level=state.level;openGame(active.id,next);challengePinned=false;if(active.type==='silhouette'){state.level=level;save();renderGame();}toast('New puzzle, fresh start. Keep going.');
+  }
+  function challengeUrl(){const url=new URL(location.href);url.search='';url.searchParams.set('dq','4');url.searchParams.set('seed',seed);if(active.type==='silhouette')url.searchParams.set('level',state.level);url.hash=active.id;return url.href;}
+  function shareText(){const name=(active.category==='rift'?'League · ':active.category==='dex'?'Kanto · ':'')+active.name;const s=status(),lines=[`Daily Queue · ${name}`,`${seed.startsWith('d-')?seed.slice(2):'Friend challenge'} · ${s==='won'?'SOLVED':s==='lost'?'NEXT ROUND':'IN PROGRESS'}`,attemptText()];if(active.type==='silhouette')lines.push(state.level==='hard'?'Hard mode · cropped silhouette':'Classic silhouette');if(state.hint)lines.push(`💡 ${state.hint} hint${state.hint===1?'':'s'} used`);if(state.checks)lines.push(`${state.checks} check${state.checks===1?'':'s'}`);
+    if(active.type==='word')state.guesses.forEach(w=>lines.push(E.scoreWord(w,puzzle.answer).map(c=>({match:'🟩',partial:'🟨',miss:'⬛'}[c])).join('')));
+    else if(['classic','types'].includes(active.type)){const items=roster();state.guesses.forEach(id=>{const c=items.find(x=>x.id===id);if(c)lines.push(tableFields().map(([k])=>{const v=E.compare(c[k],puzzle.target[k]);return v==='match'?'🟩':v==='partial'?'🟨':'🟥';}).join(''));});}
+    else if(puzzle.target)lines.push(state.guesses.map(id=>id===puzzle.target.id?'🟩':'🟥').join(''));
+    else if(active.type==='categories')lines.push(`${'🟩'.repeat(state.solved.length)}${'⬛'.repeat(4-state.solved.length)}`);
+    else if(active.type==='anagrams')lines.push('🟩'.repeat(state.found.length)+'⬛'.repeat(5-state.found.length));
+    if(/^https?:$/.test(location.protocol))lines.push('',challengeUrl());return lines.join('\n');
+  }
+  async function copy(text,title='Copy for your friends'){try{if(!navigator.clipboard?.writeText)throw Error();await navigator.clipboard.writeText(text);toast(title==='Your spoiler-free result'?'Result copied. Send it to the group chat.':'Link copied. Your friends get the same puzzle.');}catch{dialog(title,'<p>Copy the text below and paste it into Discord.</p><textarea class="share-text" id="share-text" aria-label="Text to copy" readonly></textarea>');$('share-text').value=text;$('share-text').focus();$('share-text').select();}}
+  function dialog(title,content){$('dialog-title').textContent=title;$('dialog-content').innerHTML=content;if(!$('info-dialog').open)$('info-dialog').showModal();}
+  function help(){
+    if(!active){dialog('Welcome to your next “one more.”','<p>Pick from 18 word, League, and Kanto games. Everyone gets the same daily puzzles. <strong>New puzzle</strong> gives you another round instantly.</p><p>Use <strong>Challenge a friend</strong> inside a game to share that exact puzzle. Copy result shares your performance without revealing the answer. This is friendly asynchronous play; guesses are not broadcast live.</p><p>Progress and favorites stay in this browser. All Pokémon answers are from the original 151. Tap Rules inside any game for its instructions.</p>');return;}
+    const extra={word:'Type a five-letter word and press Enter. Green means correct position; yellow means the letter is elsewhere; gray means it is not available in the answer. Repeated letters are counted only as many times as they appear. You have six guesses.',categories:'Choose four words that share a connection. Solve four groups before making four mistakes. “One away” means three selected words belong together. A repeated wrong group does not cost another mistake.',ladder:'Reach the destination by changing exactly one letter each turn. Every step must be a real five-letter word. There is no turn limit. Backtracking is allowed; a hint suggests a valid next step.',code:'The secret uses four digits from 1 to 6. Digits can repeat. Green dots count correct digits in the correct positions. Amber dots count correct digits in other positions. Dots are aggregate feedback, not positional markers. You have eight guesses.',anagrams:'Solve five anagrams. Any dictionary word that uses exactly the displayed letters is accepted, including an alternative to the intended word. You have eight incorrect attempts for the whole set. There is no timer.',hive:'Find words of at least four letters using only the hive’s letters. Every word must use the center. Letters may be repeated. Four-letter words score 1; longer words score their length. Using all seven distinct letters adds 7. Reach the target to win; then keep playing if you like.',crossword:'Fill six interlocking clues in a 5×5 grid. Click a clue to choose Across or Down. Arrow keys move between squares. Check marks incorrect letters; Reveal fills one selected letter. Checks and hints are marked in your result.',logic:'Assign one Pokémon and one destination to each trainer. Each choice is used exactly once. All clues together have exactly one solution. Fill every choice and check the case. Checks and hints are marked in your result.',classic:'Start with any name from the suggestions. Each feedback cell compares a single property: green and ✓ mean exact, amber and ≈ mean a partial overlap, red and × mean incorrect. Arrows point toward the answer’s value. A hint unlocks after three guesses. Columns can scroll horizontally on a phone.',types:'Compare type(s), color, and Kanto evolution stage. Green means exact; amber means at least one shared type; red means no match. Arrows tell you which way to move for the evolution stage. Types use modern classifications.',riddle:'Read the original champion-inspired riddle and guess a League champion. These are authored riddles, not recordings or verbatim in-game voice lines. A champion title hint unlocks after three guesses.',ability:'Recognize the icon of a champion’s Q, W, E, or R ability. Two misses reveal the ability slot; four reveal its name. A title hint unlocks after three guesses.',emoji:'Find the champion represented by the symbols. Two emojis are visible initially; each incorrect guess reveals another, up to four. A title hint unlocks after three guesses.',splash:'Identify a champion from a cropped base-skin splash artwork. Each incorrect guess zooms out. The full picture is shown after you win or use six guesses.',card:'Identify a Kanto Pokémon inside the blurred artwork. Each wrong guess reduces the blur. The card design is original to this arcade, not an actual trading card. The answer appears when the round ends.',description:'Read an original description of a Kanto Pokémon. Guess the name in six tries. After three guesses, you may reveal its Pokédex category.',silhouette:'Hard mode starts with a magnified, rotated section of a black silhouette. Every wrong guess shows more and straightens it. No colors are revealed until the round ends. Classic mode shows a complete outline. Choose the difficulty before your first guess.'};dialog(active.name,`<p>${extra[active.type]}</p><div class="help-tip"><strong>Keep the queue going</strong><p>New puzzle starts another round immediately. Today’s puzzle brings back your saved daily game. Challenge links preserve the exact puzzle and silhouette difficulty.</p></div>`);
+  }
+  function applySettings(){document.body.classList.toggle('reduce-motion',preferences.motion===false);}
+  $('settings-button').innerHTML=icon('settings');$('settings-button').addEventListener('click',()=>{dialog('Make yourself comfortable',`<label class="setting-row"><div><strong>Animations</strong><span>Tile flips, gentle movement, and celebrations</span></div><input id="motion-toggle" type="checkbox" ${preferences.motion===false?'':'checked'}></label><p>Your system’s reduced-motion preference is always respected.</p><p><strong>${read('wins',[]).length||0} puzzles solved</strong> on this browser. Progress and favorites are saved automatically.</p>`);$('motion-toggle').addEventListener('change',e=>{preferences.motion=e.target.checked;write('settings',preferences);applySettings();});});
+  $('help-button').addEventListener('click',help);$('game-help').addEventListener('click',help);$('close-dialog').addEventListener('click',()=>$('info-dialog').close());$('info-dialog').addEventListener('click',event=>{if(event.target===$('info-dialog')){const r=$('info-dialog').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)$('info-dialog').close();}});
+  $('credits-button').addEventListener('click',()=>dialog('Made for your group chat.',`<p>Daily Queue is an independent fan project. It is not affiliated with Wordle, LoLdle, Pokédle, Riot Games, Nintendo, Game Freak, or The Pokémon Company.</p><p>Champion art and abilities: <a href="https://developer.riotgames.com/docs/lol" target="_blank" rel="noopener noreferrer">Riot Data Dragon ${D.version}</a>. The Classic reference roster includes ${P.league.length} champions with available position, region, and release metadata from Meraki Analytics. Positions are common roles, not every playable lane.</p><p>Pokémon facts and artwork: <a href="https://pokeapi.co/" target="_blank" rel="noopener noreferrer">PokéAPI</a>, limited to Kanto #001–151. Modern types are used. Cards and written riddles are original fan-made puzzle presentations.</p><p>Word dictionary: dwyl/english-words. Letter Hive uses an edited subset filtered with wordfreq. Clues and puzzles are bundled locally. See CREDITS.md and LICENSES for the included sources.</p><p>Daily Queue isn’t endorsed by Riot Games and doesn’t reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends. League of Legends and Riot Games are trademarks or registered trademarks of Riot Games, Inc.</p>`));
+  document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{category=b.dataset.filter;renderHome();}));$('game-search').addEventListener('input',e=>{query=e.target.value;renderHome();});
+  function surprise(){const options=GAMES.filter(g=>g.id!==active?.id);openGame(A.pick(options,Math.random).id);}
+  $('surprise-button').addEventListener('click',surprise);$('next-random').addEventListener('click',surprise);$('new-puzzle').addEventListener('click',newPuzzle);$('favorite-game').addEventListener('click',()=>toggleFavorite(active.id));$('back-daily').addEventListener('click',()=>{openGame(active.id,daily());challengePinned=false;toast('Your saved daily puzzle is back.');});
+  $('game-select').addEventListener('change',e=>openGame(e.target.value));$('copy-result').addEventListener('click',()=>copy(shareText(),'Your spoiler-free result'));$('challenge-button').addEventListener('click',()=>{if(!/^https?:$/.test(location.protocol))return toast('Publish to GitHub Pages first to create a shareable challenge link.');copy(challengeUrl(),'Challenge a friend');});$('share-hub').addEventListener('click',()=>{if(!/^https?:$/.test(location.protocol))return toast('Use your GitHub Pages address to share the arcade.');const url=new URL(location.href);url.search='';url.hash='home';copy(url.href,'Your arcade link');});
+  document.addEventListener('click',event=>{const a=event.target.closest('a[href^="#"]');if(a){const id=a.getAttribute('href').slice(1),mapped=aliases[id]||id;if(GAME[mapped]){event.preventDefault();openGame(mapped);}else if(mapped==='home'){event.preventDefault();const u=new URL(location.href);u.search='';u.hash='home';history.replaceState(null,'',u);renderHome();window.scrollTo({top:0,behavior:'instant'});}}if(!event.target.closest('.guess-form'))closeSuggestions();});
+  document.addEventListener('keydown',event=>{if(!active||$('info-dialog').open||event.ctrlKey||event.metaKey||event.altKey||event.isComposing)return;const tag=event.target.closest('input,textarea,select');if(tag)return;if(active.type==='word'&&(!event.target.closest('button,a')||event.target.closest('[data-key]'))){if(/^[a-z]$/i.test(event.key)||['Enter','Backspace','Delete'].includes(event.key)){event.preventDefault();inputWord(event.key);}}else if(event.key==='Enter'&&!event.target.closest('button,a')){if(active.type==='categories'){event.preventDefault();submitGroup();}if(active.type==='logic'){event.preventDefault();checkLogic();}}});
+  window.addEventListener('hashchange',route);window.addEventListener('popstate',route);window.addEventListener('storage',event=>{if(event.key?.startsWith(PREFIX)){rounds=read('rounds',{});favorites=read('favorites',[]);if(active){seed=seedFor(active.id);state=loadState(active.id,seed);puzzle=getPuzzle(active.id,seed);renderGame();renderSidebar();}else renderHome();}});
+  function checkDay(){const next=E.dateKey();if(next===today)return;const old=daily();today=next;for(const [id,s]of Object.entries(rounds))if(s===old&&!(challengePinned&&id===active?.id))delete rounds[id];write('rounds',rounds);if(active&&!challengePinned&&seed===old){openGame(active.id);toast('A fresh daily set is ready.');}else if(!active)renderHome();}
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkDay();});setInterval(checkDay,15000);
+  applySettings();route();
 })();

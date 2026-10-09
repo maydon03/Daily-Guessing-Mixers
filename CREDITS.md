@@ -2,9 +2,11 @@
 
 Daily Queue is an independent fan project inspired by daily deduction and word games. It is not an official Wordle, LoLdle, or Pokédle product.
 
+The redesigned arcade includes original fan-written riddles, field notes, card layouts, clue copy, and logic/crossword content. They are not copied game dialogue or official voice lines.
+
 ## League of Legends
 
-Champion names, titles, classifications, base statistics, and portraits: Riot Games Data Dragon, version 16.20.1. Retrieved October 8, 2026.
+Champion names, titles, classifications, base statistics, portraits, ability icons, and splash art: Riot Games Data Dragon, version 16.20.1. Retrieved October 8, 2026. The Classic League clue table intentionally uses a 171-champion metadata roster because the frozen reference metadata is available for that subset; the other League modes use the full 173-champion art/ability roster. The browser requests the official HTTPS image endpoints at play time so the GitHub upload stays small.
 
 - Documentation: https://developer.riotgames.com/docs/lol
 - Dataset: https://ddragon.leagueoflegends.com/cdn/16.20.1/data/en_US/champion.json
@@ -20,7 +22,7 @@ Data: the PokéAPI project's CSV datasets for Pokémon, species, names, and type
 - https://github.com/PokeAPI/pokeapi/tree/master/data/v2/csv
 - https://github.com/PokeAPI/sprites
 
-The PokéAPI source license is included in `LICENSES/pokeapi.md`; it does not grant ownership of Pokémon characters or artwork.
+The PokéAPI source license is included in `LICENSES/pokeapi.md`; it does not grant ownership of Pokémon characters or artwork. Daily Queue intentionally filters every Pokémon game to the original 151.
 
 ## English dictionary
 

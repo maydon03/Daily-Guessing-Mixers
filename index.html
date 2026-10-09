@@ -3,65 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0c1010">
-  <meta name="description" content="One Wordle, three League mini-games, and three original-151 Pokémon mini-games. Same puzzles for the whole group. New set at midnight Central.">
-  <title>Daily Queue · One Wordle, six themed games</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230c1010'/%3E%3Cpath d='M15 15h14v14H15zm20 0h14v14H35zM15 35h14v14H15zm20 0h14v14H35z' fill='%23b1f46b'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="themes.css?v=4">
-  <script src="data.js" defer></script>
-  <script src="assets/portraits.js" defer></script>
-  <script src="engine.js" defer></script>
-  <script src="app.js?v=4" defer></script>
+  <meta name="theme-color" content="#10141f">
+  <meta name="description" content="Your group's puzzle arcade. Word games, League champion mysteries, and the original 151 Pokémon. Unlimited rounds and shareable challenges.">
+  <title>Daily Queue · Your group's puzzle arcade</title>
+  <link rel="icon" href="assets/arcade-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css?v=4.1">
+  <script defer src="data.js"></script>
+  <script defer src="puzzles.js?v=4.1"></script>
+  <script defer src="engine.js"></script>
+  <script defer src="puzzle-engine.js?v=4.1"></script>
+  <script defer src="app.js?v=4.1"></script>
 </head>
-<body data-theme="word">
-  <a href="#game-panel" class="skip-link">Skip to puzzle</a>
-  <div class="theme-background" aria-hidden="true">
-    <div class="theme-scene word-scene"><span class="floating-letter letter-one">W</span><span class="floating-letter letter-two">A</span><span class="floating-letter letter-three">Q</span><span class="floating-letter letter-four">Z</span><span class="floating-letter letter-five">?</span></div>
-    <div class="theme-scene rift-scene"><img class="rift-background graves-background" src="assets/themes/graves.jpg" alt="" decoding="async"><img class="rift-background viego-background" src="assets/themes/viego.jpg" alt="" decoding="async"><img class="rift-background pyke-background" src="assets/themes/pyke.jpg" alt="" decoding="async"></div>
-    <div class="theme-scene dex-scene"><img class="pokemon-background charizard-background" src="assets/themes/charizard.png" alt="" decoding="async"><img class="pokemon-background charmander-background" src="assets/themes/charmander.png" alt="" decoding="async"><img class="pokemon-background pikachu-background" src="assets/themes/pikachu.png" alt="" decoding="async"></div>
-  </div>
-  <div class="page-shell">
-    <header class="site-header">
-      <a class="brand" href="./" aria-label="Daily Queue home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>daily<span class="brand-light">queue</span><span class="brand-period">.</span></span></a>
-      <span class="header-note" id="theme-header-note">THE LETTER ARCADE</span>
-      <button class="outline-button help-button" id="help-button"><span aria-hidden="true">?</span> How to play</button>
-    </header>
-    <main>
-      <div class="day-heading"><div><p class="eyebrow" id="theme-eyebrow">INSERT A LITTLE BRAINPOWER</p><h1 id="theme-heading">The letter arcade<span>.</span></h1></div><div class="date-stamp"><span id="date-label"></span><strong id="edition-label"></strong></div></div>
-      <nav class="game-tabs" aria-label="Choose a game" role="tablist">
-        <button class="game-tab active" id="tab-word" data-game="word" role="tab" aria-selected="true" aria-controls="game-panel"><span class="tab-symbol word-symbol" aria-hidden="true">W</span><span class="tab-copy"><strong>Wordle</strong><span>One classic word game.</span></span><span class="tab-status" id="tab-status-word">01</span></button>
-        <button class="game-tab" id="tab-rift" data-game="rift" role="tab" aria-selected="false" aria-controls="game-panel" tabindex="-1"><span class="tab-symbol rift-symbol" aria-hidden="true">R</span><span class="tab-copy"><strong>Rift</strong><span>Three League mini-games.</span></span><span class="tab-status" id="tab-status-rift">03</span></button>
-        <button class="game-tab" id="tab-dex" data-game="dex" role="tab" aria-selected="false" aria-controls="game-panel" tabindex="-1"><span class="tab-symbol dex-symbol" aria-hidden="true">D</span><span class="tab-copy"><strong>Dex</strong><span>Three Kanto mini-games.</span></span><span class="tab-status" id="tab-status-dex">03</span></button>
-      </nav>
-      <div class="workspace">
-        <section class="game-panel" id="game-panel" role="tabpanel" aria-labelledby="tab-word" tabindex="0">
-          <div class="device-header" aria-hidden="true"><span class="device-lens"></span><div class="device-indicators"><i></i><i></i><i></i></div><div class="device-label"><span>POKÉDEX</span><strong id="dex-device-status">SCANNER READY</strong></div><span class="device-rivet"></span></div>
-          <div class="theme-showcase" id="theme-showcase" aria-hidden="true">
-            <div class="rift-showcase"><figure class="champion-scene graves-scene"><img src="assets/themes/graves.jpg" alt="" decoding="async"><figcaption>GRAVES</figcaption></figure><figure class="champion-scene viego-scene"><img src="assets/themes/viego.jpg" alt="" decoding="async"><figcaption>VIEGO</figcaption></figure><figure class="champion-scene pyke-scene"><img src="assets/themes/pyke.jpg" alt="" decoding="async"><figcaption>PYKE</figcaption></figure><span class="rift-showcase-line"></span></div>
-            <div class="dex-showcase"><div class="dex-scan-grid"></div><img class="showcase-pokemon showcase-charmander" src="assets/themes/charmander.png" alt="" decoding="async"><img class="showcase-pokemon showcase-charizard" src="assets/themes/charizard.png" alt="" decoding="async"><img class="showcase-pokemon showcase-pikachu" src="assets/themes/pikachu.png" alt="" decoding="async"><span class="dex-screen-caption">FIELD GUIDE // DAILY DISCOVERY</span></div>
-          </div>
-          <div class="game-screen">
-          <div class="panel-top"><div><span class="eyebrow" id="game-kicker">DAILY WORD</span><h2 id="game-title">Make every letter count.</h2></div><span class="attempt-pill" id="attempt-counter">0 / 6</span></div>
-          <p class="game-description" id="game-description">Find today's five-letter word. Your colors are your clues.</p>
-          <div class="variant-picker" id="variant-picker" role="tablist" aria-label="Choose a game mode" hidden></div>
-          <div id="game-content"></div>
-          <div class="game-message" id="game-message" role="status" aria-live="polite"></div>
-          <div id="game-result"></div>
-          </div>
-          <div class="device-footer" aria-hidden="true"><span>DAILY SCAN</span><span class="device-speaker"><i></i><i></i><i></i><i></i></span><span id="dex-scan-number">NO. 001</span></div>
-        </section>
-        <aside class="side-panel" aria-label="Daily progress">
-          <div class="queue-card"><div class="queue-title"><h2 id="queue-title">Your daily seven</h2><span id="completion-label">0 / 7</span></div><div class="progress-track" role="progressbar" aria-label="Games won today" aria-valuemin="0" aria-valuemax="7" aria-valuenow="0" id="daily-progress"><span id="progress-fill"></span></div><div id="queue-list"></div><div class="queue-actions"><button class="share-button" id="share-day">Copy daily results <span aria-hidden="true">▤</span></button><button class="refresh-button" id="refresh-lineup" type="button"><span aria-hidden="true">↻</span> Refresh lineup</button><button class="text-button daily-return" id="return-daily" type="button" hidden>Back to today’s set</button></div><p class="side-small" id="lineup-note">Same puzzles. Everyone's own guesses.</p></div>
-          <div class="reset-card"><p class="eyebrow">NEXT DAILY DROP</p><p class="countdown" id="countdown">--:--:--</p><p>Midnight, US Central</p><span class="reset-note">One fresh puzzle per game, every day.</span></div>
-          <div class="legend-card"><p class="eyebrow">READ THE COLORS</p><div><span class="legend-square match" aria-hidden="true">✓</span><span>Exact match</span></div><div><span class="legend-square partial" aria-hidden="true">~</span><span>Partial match</span></div><div><span class="legend-square miss" aria-hidden="true">×</span><span>No match</span></div><p id="legend-extra">Yellow letters belong in a different spot.</p></div>
-        </aside>
+<body data-world="arcade">
+  <a href="#main" class="skip-link">Skip to games</a>
+  <div class="ambient" aria-hidden="true"><div class="ambient-orb orb-one"></div><div class="ambient-orb orb-two"></div><div class="ambient-grid"></div></div>
+  <div id="world-art" class="world-art" aria-hidden="true"></div>
+  <header class="site-header wrap">
+    <a class="brand" href="#home" aria-label="Daily Queue home"><img src="assets/arcade-mark.svg" width="38" height="38" alt=""><span>dailyqueue<span class="brand-dot">.</span><small>THE GROUP CHAT ARCADE</small></span></a>
+    <div class="header-actions"><span class="live-pill"><i></i> Always another round</span><button class="icon-button" id="settings-button" aria-label="Settings"></button><button class="quiet-button" id="help-button">How to play <span>↗</span></button></div>
+  </header>
+  <main id="main" class="wrap">
+    <section id="home-view">
+      <div class="hero">
+        <div class="hero-copy"><p class="eyebrow"><span class="little-star">✦</span> GOOD GAMES. BETTER COMPANY.</p><h1>A little brainpower.<br>A lot of <em>“one more.”</em></h1><p class="hero-description">Word nerds, Rift regulars, and Kanto collectors.<br>Your next favorite puzzle is right here.</p><div class="hero-actions"><a href="#library" class="primary-button">Find your next game <span>↓</span></a><button class="outline-button" id="surprise-button">Surprise me <span>⤨</span></button></div><div class="hero-facts"><span><strong>18</strong> games to get lost in</span><i></i><span><strong>∞</strong> rounds, zero waiting</span></div></div>
+        <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="art-star star-one">✦</span><span class="art-star star-two">✧</span><div class="hero-word-card"><span>THAT’S THE WORD.</span><div class="hero-word-row"><i>Q</i><i>U</i><i>E</i><i>U</i><i>E</i></div><small>One more round? Obviously.</small></div><div class="hero-rift-card"><img src="assets/themes/graves.jpg" alt=""><span>THE RIFT IS CALLING</span></div><div class="hero-dex-card"><img src="assets/themes/pikachu.png" alt=""><span>151 possibilities.</span></div><div class="floating-plus">+</div><div class="art-label"><i></i> YOUR CREW’S NEW RITUAL</div></div>
       </div>
-    </main>
-    <footer><span>For the group chat, with love.</span><div><span>Progress stays in this browser.</span><button class="text-button" id="credits-button">Credits</button></div></footer>
-  </div>
-  <div id="toast" role="status" aria-live="polite"></div>
-  <dialog id="info-dialog"><div class="dialog-heading"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" aria-label="Close dialog">×</button></div><div id="dialog-content"></div></dialog>
-  <noscript><div class="no-script">Daily Queue needs JavaScript enabled to run the puzzles.</div></noscript>
+      <section class="library-section" id="library" aria-labelledby="library-title">
+        <div class="section-heading"><div><p class="eyebrow">PICK YOUR PLAYGROUND</p><h2 id="library-title">The arcade<span>.</span></h2></div><label class="search-games"><span aria-hidden="true">⌕</span><input id="game-search" type="search" placeholder="Find a game…" aria-label="Search games" maxlength="80"></label></div>
+        <div class="library-toolbar"><div class="filter-tabs" aria-label="Filter game collection"><button data-filter="all" class="active" aria-pressed="true">All games <span>18</span></button><button data-filter="word" aria-pressed="false">Word & logic <span>8</span></button><button data-filter="rift" aria-pressed="false">League <span>5</span></button><button data-filter="dex" aria-pressed="false">Pokémon <span>5</span></button><button data-filter="favorites" aria-pressed="false" aria-label="Favorite games">♡ <span class="favorite-label">Favorites</span></button></div><span class="library-note">A fresh daily set. Unlimited replays.</span></div>
+        <div id="game-grid"></div>
+        <div class="friends-banner"><span class="friends-icon" aria-hidden="true">↗</span><div><h3>Same puzzle. Different group-chat bragging rights.</h3><p>Open any game and hit <strong>Challenge a friend</strong>. Your link gives everyone the exact same puzzle.</p></div><button class="outline-button" id="share-hub">Copy hub link</button></div>
+      </section>
+    </section>
+    <section id="play-view" hidden>
+      <div class="play-toolbar"><a href="#home" class="back-link"><span>←</span> All games</a><div class="play-context"><span id="round-label">Daily puzzle</span><span id="progress-label"></span></div><button class="quiet-button" id="game-help">Rules <span>?</span></button></div>
+      <div class="play-layout">
+        <aside class="game-sidebar" aria-label="Game library"><div class="sidebar-heading"><span>YOUR PLAYGROUND</span><span id="sidebar-count">18</span></div><div id="side-games"></div><div class="sidebar-bottom"><span class="little-star">✦</span><p>A fresh set at midnight Central.<br><strong>Or just start another round.</strong></p></div></aside>
+        <div class="game-main">
+          <div class="mobile-game-switch"><label for="game-select">Jump to a game</label><select id="game-select"></select></div>
+          <section id="game-panel" class="game-panel" aria-labelledby="game-title" tabindex="-1">
+            <div class="game-banner" id="game-banner" aria-hidden="true"></div>
+            <div class="game-panel-inner">
+              <div class="panel-top"><div><p class="eyebrow" id="game-kicker"></p><h1 id="game-title"></h1></div><span class="game-emblem" id="game-emblem" aria-hidden="true"></span></div>
+              <p id="game-description" class="game-description"></p>
+              <div class="game-controls"><div class="round-chips"><span class="attempt-pill" id="attempt-counter"></span><span class="daily-chip" id="daily-chip"></span></div><div class="control-buttons"><button class="icon-button" id="favorite-game" aria-label="Add to favorites"></button><button class="new-puzzle-button" id="new-puzzle"><span>↻</span> New puzzle</button></div></div>
+              <div id="game-content"></div>
+              <p id="game-message" class="game-message" role="status" aria-live="polite"></p>
+              <div id="game-hints"></div>
+              <div id="game-result" aria-live="polite"></div>
+            </div>
+            <div class="game-bottom"><button class="quiet-button" id="challenge-button"><span>↗</span> Challenge a friend</button><button class="quiet-button" id="copy-result"><span>▤</span> Copy result</button><button class="quiet-button" id="back-daily" hidden>Today’s puzzle</button><span class="saved-indicator" id="saved-indicator"><i></i> Progress saved</span></div>
+          </section>
+          <div class="under-game"><p id="under-game-note"></p><button class="quiet-button" id="next-random">What’s next? <span>→</span></button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer wrap"><div><strong>dailyqueue.</strong><span>Made for the friends who say “one more.”</span></div><div><span>Free to play. No account needed.</span><button id="credits-button" class="quiet-button">Credits & info</button></div></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="celebration" aria-hidden="true"></div>
+  <dialog id="info-dialog"><div class="dialog-heading"><h2 id="dialog-title"></h2><button id="close-dialog" class="icon-button" aria-label="Close dialog">×</button></div><div id="dialog-content"></div></dialog>
+  <noscript><p class="no-script">Enable JavaScript to play the Daily Queue puzzles.</p></noscript>
 </body>
 </html>
