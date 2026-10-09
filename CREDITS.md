@@ -45,3 +45,12 @@ The League themed backdrop uses the default champion splash assets for Graves, V
 
 - Riot splash convention: https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Graves_0.jpg (with `Viego_0.jpg` and `Pyke_0.jpg`)
 - Pokémon official artwork: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png (with `4.png` and `25.png`)
+
+
+## Friends edition — October 9, 2026
+
+Additional local champion theme splash artwork: Veigar, Karma, K’Sante, Aatrox, and Zyra from the same official Riot Data Dragon splash endpoint. Each League game now has a different featured champion. Existing Graves, Viego, and Pyke assets are retained.
+
+Additional local Pokémon theme artwork: Gyarados #130, Blastoise #9, Eevee #133, Groudon #383, and Pancham #674 from the PokéAPI official-artwork repository. **Pancham and Groudon are theme/collectible references only; all game answers remain #001–151.** The felt-hat motif is an original CSS decoration, not a scan of an official card.
+
+The Cryptic Vault contains 60 originally written clue formulations with wordplay explanations. Common cryptic devices and word/anagram pairings are not exclusive to this project. The sixteen archive challenges and personal jokes are based on information Mason supplied for this group. Kitten SVGs, decorative patterns, interface animation, and the optional synthesized victory chime are original code; there are no copied voice recordings.
